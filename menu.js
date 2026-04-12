@@ -14,7 +14,7 @@
 // ─────────────────────────────────────────────────
 //  🔧 CONFIGURATION — PASTE YOUR GOOGLE SHEET URL HERE
 // ─────────────────────────────────────────────────
-const SHEET_CSV_URL = 'YOUR_GOOGLE_SHEET_CSV_URL_HERE';
+const SHEET_CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQSD8htdn5MEhyQXTvBeibFi-uIWOmTltU3ZuzLZ5tvLtj6y5tYjrhz6akEB0_j76O-onLilumjPw64/pub?output=csv';
 
 // How often to auto-refresh (in milliseconds). Default: every 2 minutes.
 const REFRESH_INTERVAL = 2 * 60 * 1000;
