@@ -50,26 +50,26 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .spinner{width:28px;height:28px;border:2px solid var(--border);border-top-color:var(--gold);border-radius:50%;animation:spin 0.75s linear infinite}
 @keyframes spin{to{transform:rotate(360deg)}}
 .menu-grid{display:grid;grid-template-columns:1fr;gap:1rem}
-/* CARD */
-.menu-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius);display:flex;overflow:hidden;transition:var(--t);animation:card-in 0.4s ease both;position:relative}
+/* CARD – VERTICAL LAYOUT */
+.menu-card{background:var(--bg-card);border:1px solid var(--border-soft);border-radius:var(--radius);overflow:hidden;transition:var(--t);animation:card-in 0.4s ease both;position:relative;display:flex;flex-direction:column}
 @keyframes card-in{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
 .menu-card:hover{border-color:var(--border)}
 .menu-card.out-of-stock{opacity:0.45}
-.card-img-wrap{width:110px;min-width:110px;background:var(--bg-card2);position:relative;overflow:hidden}
+.card-img-wrap{width:100%;aspect-ratio:1/1;background:var(--bg-card2);position:relative;overflow:hidden}
 .card-img-wrap img{width:100%;height:100%;object-fit:cover;display:block;transition:transform 0.4s ease}
 .menu-card:hover .card-img-wrap img{transform:scale(1.05)}
-.card-placeholder{width:100%;height:100%;min-height:110px;display:flex;align-items:center;justify-content:center;font-size:2.5rem}
-.badge-strip{position:absolute;top:0.5rem;left:0.5rem;display:flex;flex-direction:column;gap:0.25rem}
+.card-placeholder{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3rem;background:var(--bg-card2)}
+.badge-strip{position:absolute;top:0.5rem;left:0.5rem;display:flex;flex-direction:column;gap:0.25rem;z-index:2}
 .badge{font-size:0.58rem;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;padding:0.2rem 0.5rem;border-radius:100px;white-space:nowrap}
 .badge-bestseller{background:var(--gold);color:#09080a}
 .badge-new{background:rgba(201,168,76,0.15);border:1px solid var(--gold-dim);color:var(--gold-lt)}
 .badge-spicy{background:rgba(201,76,76,0.2);border:1px solid rgba(201,76,76,0.4);color:#e87e7e}
 .badge-oos{background:rgba(255,255,255,0.07);color:var(--text-muted)}
-.card-body{flex:1;padding:1rem 1rem 0.9rem;display:flex;flex-direction:column;justify-content:space-between}
+.card-body{flex:1;padding:1rem 1rem 1.2rem;display:flex;flex-direction:column}
 .card-cat{font-size:0.6rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--gold-dim);margin-bottom:0.25rem}
 .card-name{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--cream);line-height:1.25;margin-bottom:0.3rem}
 .card-desc{font-size:0.75rem;color:var(--text-muted);line-height:1.55;flex:1;margin-bottom:0.8rem}
-.card-footer{display:flex;align-items:center;justify-content:space-between;gap:0.5rem}
+.card-footer{display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-top:auto}
 .card-price{font-family:'Playfair Display',serif;font-size:1.15rem;font-weight:700;color:var(--gold)}
 .card-price .cur{font-size:0.75rem;font-family:'DM Sans',sans-serif;font-weight:400;color:var(--gold-dim);vertical-align:super}
 .card-stock{font-size:0.68rem;color:var(--text-muted)}
@@ -78,7 +78,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .add-btn:hover,.add-btn:active{background:var(--gold);color:#09080a;border-color:var(--gold)}
 .add-btn.in-cart{background:var(--gold);color:#09080a;border-color:var(--gold);font-size:0.7rem;font-weight:700;width:auto;padding:0 0.65rem;border-radius:100px;gap:0.3rem}
 .empty-state{text-align:center;padding:4rem 0;color:var(--text-muted);font-size:0.85rem}
-/* DRAWER */
+/* DRAWER (unchanged) */
 .drawer-overlay{position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.7);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 .cart-drawer{position:fixed;right:0;top:0;bottom:0;width:min(100vw,420px);background:var(--bg-drawer);border-left:1px solid var(--border);z-index:400;display:flex;flex-direction:column;transform:translateX(100%);transition:transform 0.35s cubic-bezier(0.4,0,0.2,1)}
 .cart-drawer.open{transform:translateX(0)}
@@ -102,7 +102,7 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
 .cart-total{font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:700;color:var(--gold)}
 .btn-checkout{width:100%;background:var(--gold);border:none;color:#09080a;font-family:'DM Sans',sans-serif;font-size:0.92rem;font-weight:600;padding:0.95rem;border-radius:var(--radius-sm);cursor:pointer;transition:var(--t);letter-spacing:0.04em}
 .btn-checkout:hover{background:var(--gold-lt)}
-/* MODAL */
+/* MODAL (unchanged) */
 .modal-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,0.75);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);display:flex;align-items:flex-end;justify-content:center;padding:0}
 .checkout-modal{background:var(--bg-drawer);border:1px solid var(--border);border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:92vh;overflow-y:auto;display:flex;flex-direction:column;animation:slide-up 0.35s cubic-bezier(0.4,0,0.2,1)}
 @keyframes slide-up{from{transform:translateY(100%)}to{transform:translateY(0)}}
@@ -183,7 +183,6 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;fon
   .hero{padding:4rem 2rem 3rem}
   .menu-section{padding:2rem 2rem 3rem}
   .menu-grid{grid-template-columns:1fr 1fr;gap:1.1rem}
-  .card-img-wrap{width:130px;min-width:130px}
   .modal-overlay{align-items:center;padding:1.5rem}
   .checkout-modal{border-radius:20px;animation:scale-in 0.3s ease}
 }
