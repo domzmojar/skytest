@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sky Sweet Treats — Menu</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+</head>
+<body>
+
+  <!-- Background grain overlay -->
+  <div class="grain"></div>
+
+  <!-- HERO HEADER -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <nav class="navbar">
+      <span class="nav-badge">Open Now</span>
+      <div class="nav-hours">Mon–Sun · 10AM–10PM</div>
+    </nav>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Est. 2024</p>
+      <h1 class="hero-title">Sky Sweet<br/><em>Treats</em></h1>
+      <p class="hero-tagline">Bold burgers. Unforgettable bites.</p>
+    </div>
+    <div class="hero-scroll-hint">
+      <span>Scroll to explore</span>
+      <div class="scroll-line"></div>
+    </div>
+  </header>
+
+  <!-- FILTER TABS -->
+  <section class="filter-bar">
+    <div class="filter-inner">
+      <button class="filter-btn active" data-filter="all">All Items</button>
+      <button class="filter-btn" data-filter="burgers">Burgers</button>
+      <button class="filter-btn" data-filter="sides">Sides</button>
+      <button class="filter-btn" data-filter="drinks">Drinks</button>
+      <button class="filter-btn" data-filter="desserts">Desserts</button>
+    </div>
+  </section>
+
+  <!-- MENU GRID -->
+  <main class="menu-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Our Menu</h2>
+        <p class="section-sub" id="item-count">Loading menu…</p>
+      </div>
+      <div class="menu-grid" id="menu-grid">
+        <!-- Cards injected by JS -->
+      </div>
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <p>Fetching today's menu…</p>
+      </div>
+      <div class="empty-state hidden" id="empty-state">
+        <p>No items found in this category.</p>
+      </div>
+    </div>
+  </main>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-brand">Sky Sweet Treats</p>
+      <p class="footer-copy">© 2024 · All rights reserved</p>
+      <p class="footer-note">Menu updates automatically · Powered by Google Sheets</p>
+    </div>
+  </footer>
+
+  <script src="js/menu.js"></script>
+</body>
+</html>
