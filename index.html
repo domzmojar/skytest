@@ -1,76 +1,255 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Sky Sweet Treats — Menu</title>
-  <link rel="stylesheet" href="css/style.css"/>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <title>Sky Sweet Treats</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/style.css"/>
 </head>
 <body>
 
-  <!-- Background grain overlay -->
   <div class="grain"></div>
 
-  <!-- HERO HEADER -->
-  <header class="hero">
-    <div class="hero-glow"></div>
-    <nav class="navbar">
-      <span class="nav-badge">Open Now</span>
-      <div class="nav-hours">Mon–Sun · 10AM–10PM</div>
-    </nav>
-    <div class="hero-content">
-      <p class="hero-eyebrow">Est. 2024</p>
-      <h1 class="hero-title">Sky Sweet<br/><em>Treats</em></h1>
-      <p class="hero-tagline">Bold burgers. Unforgettable bites.</p>
-    </div>
-    <div class="hero-scroll-hint">
-      <span>Scroll to explore</span>
-      <div class="scroll-line"></div>
+  <!-- ═══════════════ HEADER ═══════════════ -->
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="header-brand">
+        <h1 class="brand-name">Sky Sweet <em>Treats</em></h1>
+        <span class="brand-open"><span class="dot"></span>Open Now</span>
+      </div>
+      <button class="cart-fab" id="cart-btn" aria-label="View cart">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+        <span class="cart-count hidden" id="cart-count">0</span>
+      </button>
     </div>
   </header>
 
-  <!-- FILTER TABS -->
-  <section class="filter-bar">
-    <div class="filter-inner">
-      <button class="filter-btn active" data-filter="all">All Items</button>
-      <button class="filter-btn" data-filter="burgers">Burgers</button>
-      <button class="filter-btn" data-filter="sides">Sides</button>
-      <button class="filter-btn" data-filter="drinks">Drinks</button>
-      <button class="filter-btn" data-filter="desserts">Desserts</button>
-    </div>
+  <!-- ═══════════════ HERO ═══════════════ -->
+  <section class="hero">
+    <div class="hero-glow"></div>
+    <p class="hero-eyebrow">Bold Burgers · Unforgettable Bites</p>
+    <h2 class="hero-title">Our <em>Menu</em></h2>
+    <p class="hero-sub">Fresh, made-to-order, delivered to your door.</p>
   </section>
 
-  <!-- MENU GRID -->
+  <!-- ═══════════════ FILTER BAR ═══════════════ -->
+  <div class="filter-bar" id="filter-bar">
+    <div class="filter-inner" id="filter-inner">
+      <button class="filter-btn active" data-filter="all">All</button>
+      <!-- Dynamic categories injected here -->
+    </div>
+  </div>
+
+  <!-- ═══════════════ MENU ═══════════════ -->
   <main class="menu-section">
-    <div class="container">
-      <div class="section-header">
-        <h2 class="section-title">Our Menu</h2>
-        <p class="section-sub" id="item-count">Loading menu…</p>
-      </div>
-      <div class="menu-grid" id="menu-grid">
-        <!-- Cards injected by JS -->
-      </div>
-      <div class="loading-state" id="loading-state">
-        <div class="spinner"></div>
-        <p>Fetching today's menu…</p>
-      </div>
-      <div class="empty-state hidden" id="empty-state">
-        <p>No items found in this category.</p>
-      </div>
+    <div class="menu-status" id="menu-status">
+      <div class="spinner"></div>
+      <p>Loading menu…</p>
+    </div>
+    <div class="menu-grid hidden" id="menu-grid"></div>
+    <div class="empty-state hidden" id="empty-state">
+      <p>No items found.</p>
     </div>
   </main>
 
+  <!-- ═══════════════ CART DRAWER ═══════════════ -->
+  <div class="drawer-overlay hidden" id="drawer-overlay"></div>
+  <aside class="cart-drawer" id="cart-drawer" aria-hidden="true">
+    <div class="drawer-header">
+      <h3>Your Order</h3>
+      <button class="drawer-close" id="close-cart">✕</button>
+    </div>
+    <div class="cart-items" id="cart-items">
+      <p class="cart-empty-msg">Your cart is empty.<br/>Add items from the menu!</p>
+    </div>
+    <div class="cart-footer" id="cart-footer" style="display:none">
+      <div class="cart-total-row">
+        <span>Total</span>
+        <span class="cart-total" id="cart-total">₱0</span>
+      </div>
+      <button class="btn-checkout" id="btn-checkout">Proceed to Checkout →</button>
+    </div>
+  </aside>
+
+  <!-- ═══════════════ CHECKOUT MODAL ═══════════════ -->
+  <div class="modal-overlay hidden" id="checkout-overlay">
+    <div class="checkout-modal" id="checkout-modal" role="dialog" aria-modal="true">
+
+      <!-- Progress Bar -->
+      <div class="checkout-progress">
+        <div class="progress-step active" data-step="1">
+          <span class="step-num">1</span><span class="step-label">Details</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="2">
+          <span class="step-num">2</span><span class="step-label">Delivery</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="3">
+          <span class="step-num">3</span><span class="step-label">Payment</span>
+        </div>
+        <div class="progress-line"></div>
+        <div class="progress-step" data-step="4">
+          <span class="step-num">4</span><span class="step-label">Review</span>
+        </div>
+        <button class="modal-close" id="close-checkout">✕</button>
+      </div>
+
+      <!-- ── STEP 1: Personal Details ── -->
+      <div class="checkout-step active" id="step-1">
+        <h2 class="step-title">Your Details</h2>
+        <p class="step-desc">We need this to confirm your order.</p>
+        <div class="form-group">
+          <label class="form-label required" for="inp-name">Full Name</label>
+          <input class="form-input" id="inp-name" type="text" placeholder="e.g. Maria Santos" autocomplete="name"/>
+          <span class="field-error hidden" id="err-name">Please enter your name.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label required" for="inp-phone">Phone Number</label>
+          <input class="form-input" id="inp-phone" type="tel" placeholder="e.g. 09xx-xxx-xxxx" autocomplete="tel"/>
+          <span class="field-error hidden" id="err-phone">Please enter your phone number.</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="inp-notes">Special Instructions <span class="optional">(optional)</span></label>
+          <textarea class="form-input form-textarea" id="inp-notes" placeholder="Allergies, extra sauce, etc."></textarea>
+        </div>
+        <button class="btn-next" onclick="goStep(2)">Continue →</button>
+      </div>
+
+      <!-- ── STEP 2: Delivery Method ── -->
+      <div class="checkout-step" id="step-2">
+        <h2 class="step-title">How would you like to get your order?</h2>
+        <div class="method-cards">
+          <label class="method-card" id="card-delivery">
+            <input type="radio" name="order-method" value="delivery" checked/>
+            <div class="method-icon">🛵</div>
+            <div class="method-info">
+              <strong>Delivery</strong>
+              <span>We bring it to you</span>
+            </div>
+            <span class="method-check">✓</span>
+          </label>
+          <label class="method-card" id="card-pickup">
+            <input type="radio" name="order-method" value="pickup"/>
+            <div class="method-icon">🏪</div>
+            <div class="method-info">
+              <strong>Pick Up</strong>
+              <span>Claim at our shop</span>
+            </div>
+            <span class="method-check">✓</span>
+          </label>
+        </div>
+
+        <!-- Delivery fields -->
+        <div id="delivery-fields">
+          <div class="form-group">
+            <label class="form-label required" for="inp-address">Delivery Address</label>
+            <textarea class="form-input form-textarea" id="inp-address" placeholder="House/Unit No., Street, Barangay, Municipality" rows="2" autocomplete="street-address"></textarea>
+            <span class="field-error hidden" id="err-address">Please enter your delivery address.</span>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="inp-landmark">Landmark <span class="optional">(optional but helpful)</span></label>
+            <input class="form-input" id="inp-landmark" type="text" placeholder="e.g. Near Jollibee, Blue gate"/>
+          </div>
+        </div>
+
+        <!-- Pickup message -->
+        <div id="pickup-fields" style="display:none">
+          <div class="pickup-note">
+            <span class="pickup-icon">📍</span>
+            <p>You'll pick up your order at our store. We'll message you when it's ready!</p>
+          </div>
+        </div>
+
+        <div class="step-nav">
+          <button class="btn-back" onclick="goStep(1)">← Back</button>
+          <button class="btn-next" onclick="goStep(3)">Continue →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 3: Payment ── -->
+      <div class="checkout-step" id="step-3">
+        <h2 class="step-title">Payment Method</h2>
+
+        <div class="payment-cards" id="payment-cards">
+
+          <label class="payment-card" id="pay-cod">
+            <input type="radio" name="payment" value="COD"/>
+            <div class="payment-icon">💵</div>
+            <div class="payment-info">
+              <strong>Cash on Delivery</strong>
+              <span>Pay when your order arrives</span>
+            </div>
+            <span class="method-check">✓</span>
+          </label>
+
+          <label class="payment-card" id="pay-cop">
+            <input type="radio" name="payment" value="COP"/>
+            <div class="payment-icon">🏪</div>
+            <div class="payment-info">
+              <strong>Cash on Pickup</strong>
+              <span>Pay when you collect your order</span>
+            </div>
+            <span class="method-check">✓</span>
+          </label>
+
+          <label class="payment-card" id="pay-gcash">
+            <input type="radio" name="payment" value="GCash"/>
+            <div class="payment-icon">📱</div>
+            <div class="payment-info">
+              <strong>GCash</strong>
+              <span>Online payment · Send before we prepare</span>
+            </div>
+            <span class="method-check">✓</span>
+          </label>
+
+        </div>
+
+        <!-- GCash details (shown when selected) -->
+        <div class="gcash-info hidden" id="gcash-info">
+          <div class="gcash-box">
+            <p class="gcash-label">Send payment to:</p>
+            <p class="gcash-number">📱 09XX-XXX-XXXX</p>
+            <p class="gcash-name">Account Name: <strong>Sky Sweet Treats</strong></p>
+            <p class="gcash-note">Screenshot your receipt. We'll ask for it via Messenger.</p>
+          </div>
+        </div>
+        <span class="field-error hidden" id="err-payment">Please select a payment method.</span>
+
+        <div class="step-nav">
+          <button class="btn-back" onclick="goStep(2)">← Back</button>
+          <button class="btn-next" onclick="goStep(4)">Review Order →</button>
+        </div>
+      </div>
+
+      <!-- ── STEP 4: Review & Confirm ── -->
+      <div class="checkout-step" id="step-4">
+        <h2 class="step-title">Review Your Order</h2>
+        <div class="review-card" id="review-card">
+          <!-- Injected by JS -->
+        </div>
+        <p class="messenger-note">
+          Tapping <strong>Place Order</strong> will open Messenger with your order details pre-filled. Just hit send! 💬
+        </p>
+        <div class="step-nav">
+          <button class="btn-back" onclick="goStep(3)">← Back</button>
+          <button class="btn-place" id="btn-place">🛒 Place Order via Messenger</button>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <!-- FOOTER -->
   <footer class="footer">
-    <div class="footer-inner">
-      <p class="footer-brand">Sky Sweet Treats</p>
-      <p class="footer-copy">© 2024 · All rights reserved</p>
-      <p class="footer-note">Menu updates automatically · Powered by Google Sheets</p>
-    </div>
+    <p class="footer-brand">Sky Sweet Treats</p>
+    <p class="footer-note">Menu auto-updates · Powered by Google Sheets</p>
   </footer>
 
   <script src="js/menu.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/checkout.js"></script>
 </body>
 </html>
