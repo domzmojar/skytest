@@ -1,225 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Sky Sweet Treats | Online Order</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/x-icon" href="images/logo.jpg">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Sky Sweet Treats — Menu</title>
+  <link rel="stylesheet" href="css/style.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
 </head>
 <body>
 
-    <!-- STOCK FRESHNESS BAR -->
-    <div id="freshness-bar" class="freshness-bar">
-        <span id="freshness-icon">🟢</span>
-        <span id="freshness-text">Loading menu...</span>
-        <button id="freshness-refresh" onclick="forceStockRefresh()" title="Refresh now">↻</button>
+  <!-- Background grain overlay -->
+  <div class="grain"></div>
+
+  <!-- HERO HEADER -->
+  <header class="hero">
+    <div class="hero-glow"></div>
+    <nav class="navbar">
+      <span class="nav-badge">Open Now</span>
+      <div class="nav-hours">Mon–Sun · 10AM–10PM</div>
+    </nav>
+    <div class="hero-content">
+      <p class="hero-eyebrow">Est. 2024</p>
+      <h1 class="hero-title">Sky Sweet<br/><em>Treats</em></h1>
+      <p class="hero-tagline">Bold burgers. Unforgettable bites.</p>
     </div>
-
-    <header class="app-header">
-        <div class="container header-flex">
-            <img src="images/logo.jpg" alt="Sky Sweet Treats Logo" class="brand-logo" onerror="this.src='https://placehold.co/100x100?text=🍰'">
-            <div class="brand-text">
-                <h1>Sky Sweet Treats</h1>
-                <p class="brand-tagline">Sky ang limit! 🍰✨</p>
-            </div>
-            <button id="announcement-icon" class="announcement-icon" onclick="showAnnouncementManually()" title="View announcement" style="display:none;">📢</button>
-        </div>
-    </header>
-
-    <!-- HERO CAROUSEL -->
-    <div id="hero-carousel" class="hero-carousel"></div>
-
-    <!-- CATEGORY TABS -->
-    <div class="category-tabs-wrapper">
-        <div id="category-tabs" class="category-tabs"></div>
+    <div class="hero-scroll-hint">
+      <span>Scroll to explore</span>
+      <div class="scroll-line"></div>
     </div>
+  </header>
 
-    <main class="container">
-        <div id="menu-grid" class="menu-grid"></div>
-    </main>
-
-    <!-- FLOATING CART -->
-    <div class="floating-cart" id="open-cart-btn">
-        <div class="cart-left">
-            <div class="cart-icon-wrap">
-                🛒
-                <span id="cart-count" class="cart-badge">0</span>
-            </div>
-            <span class="cart-label">View Cart</span>
-        </div>
-        <div class="cart-total-wrap">
-            <span id="float-total" class="cart-total-amount">₱0.00</span>
-            <span class="cart-arrow">→</span>
-        </div>
+  <!-- FILTER TABS -->
+  <section class="filter-bar">
+    <div class="filter-inner">
+      <button class="filter-btn active" data-filter="all">All Items</button>
+      <button class="filter-btn" data-filter="burgers">Burgers</button>
+      <button class="filter-btn" data-filter="sides">Sides</button>
+      <button class="filter-btn" data-filter="drinks">Drinks</button>
+      <button class="filter-btn" data-filter="desserts">Desserts</button>
     </div>
+  </section>
 
-    <!-- ===== CART MODAL ===== -->
-    <div id="cart-modal" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('cart-modal')"></div>
-        <div class="modal-content">
-            <div class="modal-handle"></div>
-            <div class="modal-header">
-                <h2>Your Cart 🛒</h2>
-                <button onclick="closeModal('cart-modal')" class="close-btn">✕</button>
-            </div>
-            <div id="cart-items" class="cart-items-container"></div>
-            <div class="modal-footer">
-                <div class="order-total-row">
-                    <span>Total</span>
-                    <span id="modal-total" class="modal-total-val">₱0.00</span>
-                </div>
-                <button onclick="openCheckout()" class="btn-primary">Proceed to Checkout →</button>
-                <button class="btn-ghost" onclick="closeModal('cart-modal')">+ Add more items</button>
-            </div>
-        </div>
+  <!-- MENU GRID -->
+  <main class="menu-section">
+    <div class="container">
+      <div class="section-header">
+        <h2 class="section-title">Our Menu</h2>
+        <p class="section-sub" id="item-count">Loading menu…</p>
+      </div>
+      <div class="menu-grid" id="menu-grid">
+        <!-- Cards injected by JS -->
+      </div>
+      <div class="loading-state" id="loading-state">
+        <div class="spinner"></div>
+        <p>Fetching today's menu…</p>
+      </div>
+      <div class="empty-state hidden" id="empty-state">
+        <p>No items found in this category.</p>
+      </div>
     </div>
+  </main>
 
-    <!-- ===== CHECKOUT MODAL ===== -->
-    <div id="checkout-modal" class="modal">
-        <div class="modal-backdrop" onclick="closeModal('checkout-modal')"></div>
-        <div class="modal-content modal-content-checkout">
-            <div class="modal-handle"></div>
-            <div class="modal-header">
-                <button onclick="closeModal('checkout-modal'); document.getElementById('cart-modal').classList.add('active');" class="back-btn">← Back</button>
-                <h2>Checkout</h2>
-                <button onclick="closeModal('checkout-modal')" class="close-btn">✕</button>
-            </div>
-
-            <div class="checkout-body">
-
-                <!-- STEP 1: DELIVERY -->
-                <div class="checkout-section">
-                    <div class="section-title"><span class="step-num">1</span> Delivery Details</div>
-
-                    <div class="field-group">
-                        <label class="field-label">Order Type</label>
-                        <div class="toggle-group" id="order-type-toggle">
-                            <button class="toggle-btn active" data-value="Delivery" onclick="selectOrderType('Delivery', this)">🏠 Delivery</button>
-                            <button class="toggle-btn" data-value="Pick-Up" onclick="selectOrderType('Pick-Up', this)">🚗 Pick-Up</button>
-                        </div>
-                        <select id="order-type" style="display:none;">
-                            <option value="Delivery" selected>Delivery</option>
-                            <option value="Pick-Up">Pick-Up</option>
-                        </select>
-                    </div>
-
-                    <div id="shipping-group" class="field-group">
-                        <label class="field-label">
-                            Shipping Address
-                            <span id="shipping-fee-display" class="shipping-fee-pill"></span>
-                        </label>
-                        <select id="shipping-address" class="field-select" onchange="updateShippingFee()"></select>
-                    </div>
-
-                    <div id="landmark-group" class="field-group">
-                        <label class="field-label">Landmark / Delivery Instructions <span class="required">*</span></label>
-                        <textarea id="customer-address" class="field-input" placeholder="e.g., Near the church, blue gate, specific directions..." rows="2" required></textarea>
-                    </div>
-                </div>
-
-                <!-- STEP 2: PERSONAL INFO -->
-                <div class="checkout-section">
-                    <div class="section-title"><span class="step-num">2</span> Your Info</div>
-                    <div class="field-group">
-                        <label class="field-label">Full Name <span class="required">*</span></label>
-                        <input type="text" id="customer-name" class="field-input" placeholder="Juan Dela Cruz" required>
-                    </div>
-                </div>
-
-                <!-- STEP 3: PAYMENT -->
-                <div class="checkout-section">
-                    <div class="section-title"><span class="step-num">3</span> Payment</div>
-
-                    <div class="field-group" id="exact-amount-group">
-                        <label class="field-label">Exact amount mo? <span class="required">*</span></label>
-                        <div class="radio-group">
-                            <label class="radio-card">
-                                <input type="radio" name="exact-amount" value="yes" onchange="toggleAmountInput()">
-                                <span class="radio-label">✅ Yes, exact</span>
-                            </label>
-                            <label class="radio-card">
-                                <input type="radio" name="exact-amount" value="no" onchange="toggleAmountInput()">
-                                <span class="radio-label">💵 No, kambyo</span>
-                            </label>
-                        </div>
-                        <div id="amount-input-container" style="display:none; margin-top:12px;">
-                            <label class="field-label">Amount nga ibayad mo</label>
-                            <input type="number" id="customer-amount" class="field-input" step="0.01" min="0" placeholder="e.g., 500.00" oninput="updateChangeDue()">
-                            <div id="change-due-container" class="change-due-box" style="display:none;">
-                                <span>🔄 Imo kambyo:</span>
-                                <strong id="change-due-amount">₱0.00</strong>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="field-group">
-                        <label class="field-label">Mode of Payment</label>
-                        <div class="payment-options" id="payment-options-group">
-                            <label class="payment-card">
-                                <input type="radio" name="payment-radio" value="COD" checked onchange="selectPayment('COD')">
-                                <span class="payment-icon">💰</span>
-                                <span class="payment-name">COD</span>
-                                <span class="payment-desc">Cash on Delivery</span>
-                            </label>
-                            <label class="payment-card" id="cop-option">
-                                <input type="radio" name="payment-radio" value="COP" onchange="selectPayment('COP')">
-                                <span class="payment-icon">💰</span>
-                                <span class="payment-name">COP</span>
-                                <span class="payment-desc">Cash on Pickup</span>
-                            </label>
-                            <label class="payment-card">
-                                <input type="radio" name="payment-radio" value="GCASH" onchange="selectPayment('GCASH')">
-                                <span class="payment-icon">📱</span>
-                                <span class="payment-name">GCash</span>
-                                <span class="payment-desc">Online payment</span>
-                            </label>
-                        </div>
-                        <!-- Hidden select for compatibility -->
-                        <select id="payment-method" style="display:none;">
-                            <option value="COD">COD</option>
-                            <option value="COP">COP</option>
-                            <option value="GCASH">GCASH</option>
-                        </select>
-                    </div>
-
-                    <div id="gcash-info" class="gcash-card" style="display:none;">
-                        <div class="gcash-header">📱 GCash Payment</div>
-                        <div class="gcash-number"><strong>09264569430</strong> · K** M.</div>
-                        <img src="images/qr-pay.jpg" id="qr-image-el" class="qr-image" alt="GCash QR Code" onerror="this.style.display='none'">
-                        <button onclick="downloadQR()" class="btn-download-qr">📥 Download QR Code</button>
-                        <div class="gcash-reminder">
-                            ⚠️ Send payment first, then screenshot your receipt and attach it when you send your order.
-                        </div>
-                    </div>
-                </div>
-
-                <!-- ORDER SUMMARY -->
-                <div class="checkout-section">
-                    <div class="section-title"><span class="step-num">4</span> Order Summary</div>
-                    <div class="summary-card">
-                        <div id="final-summary-text" class="summary-items"></div>
-                        <div id="shipping-summary" class="summary-totals"></div>
-                    </div>
-                </div>
-
-            </div>
-
-            <div class="modal-footer">
-                <button id="messenger-btn" onclick="sendToMessenger()" class="btn-messenger">
-                    <span class="messenger-icon">💬</span>
-                    Send Order via Messenger
-                </button>
-                <p class="checkout-note">You'll be redirected to Facebook Messenger with your order pre-filled.</p>
-            </div>
-        </div>
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="footer-inner">
+      <p class="footer-brand">Sky Sweet Treats</p>
+      <p class="footer-copy">© 2024 · All rights reserved</p>
+      <p class="footer-note">Menu updates automatically · Powered by Google Sheets</p>
     </div>
+  </footer>
 
-    <div id="toast" class="toast"></div>
-
-    <script src="app.js"></script>
+  <script src="js/menu.js"></script>
 </body>
 </html>
