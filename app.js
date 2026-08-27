@@ -1146,6 +1146,7 @@ function buildOrderText(data, orderNumber) {
     text += `📅 ${dateStr}\n`;
     text += `⏰ ${timeStr}\n`;
     text += `🆔 ${orderNumber}\n`;
+    text += `📦 Track: ${window.location.origin}/track.html?order=${encodeURIComponent(orderNumber)}\n`;
     text += `════════════════\n`;
 
     text += `👤 **CUSTOMER DETAILS**\n`;
@@ -1248,7 +1249,18 @@ window.submitOrder = async function() {
         if (error) throw error;
 
         localStorage.setItem('lastOrderNumber', orderNumber);
-        showOrderConfirmation(orderNumber, data);
+
+        document.getElementById('checkout-modal').classList.remove('active');
+        window.__lastOrderData = data;
+        window.__lastOrderNumber = orderNumber;
+
+        // Send straight to Messenger — this is how our customers actually
+        // want to order. Tracking link rides along inside the message itself.
+        const text = buildOrderText(data, orderNumber);
+        navigator.clipboard.writeText(text).catch(() => {});
+        const messengerWin = window.open(`${CONFIG.messengerUrl}?text=${encodeURIComponent(text)}`, '_blank');
+
+        showOrderBanner(orderNumber, !messengerWin);
 
         cart = [];
         updateUI();
@@ -1266,37 +1278,38 @@ window.submitOrder = async function() {
 };
 
 // ============================================
-// ORDER CONFIRMATION MODAL – shows order #, lets customer track status
-// or optionally still send the receipt to Messenger
+// ORDER BANNER – Messenger already opened automatically.
+// This just confirms the order # and offers the track link + a
+// manual "Open Messenger" fallback in case the popup got blocked.
 // ============================================
-function showOrderConfirmation(orderNumber, data) {
-    document.getElementById('checkout-modal').classList.remove('active');
+function showOrderBanner(orderNumber, messengerBlocked) {
+    document.querySelectorAll('.order-banner').forEach(el => el.remove());
 
-    const modal = document.createElement('div');
-    modal.className = 'modal active';
-    modal.id = 'confirmation-modal';
-    modal.innerHTML = `
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>✅ Order placed!</h2>
-                <button onclick="document.getElementById('confirmation-modal').remove()" class="close-btn">&times;</button>
-            </div>
-            <div class="checkout-body" style="text-align:center; padding: 20px 0;">
-                <p style="font-size:15px; color:var(--text-light,#666);">Your order number is</p>
-                <p style="font-size:28px; font-weight:700; color:var(--primary); margin:8px 0 20px;">${orderNumber}</p>
-                <p style="font-size:14px; color:var(--text-light,#666);">We'll review your order shortly. You can check its status anytime on the tracking page — no need to guess!</p>
-            </div>
-            <div class="modal-footer">
-                <a href="track.html?order=${encodeURIComponent(orderNumber)}" class="btn-primary" style="display:block; text-align:center; text-decoration:none;">📦 Track my order</a>
-                <button onclick="window.__sendReceiptToMessenger('${orderNumber}')" class="btn-primary" style="background:#0084FF;">📱 Also send receipt to Messenger</button>
-                <span class="back-to-menu-link" onclick="document.getElementById('confirmation-modal').remove()">↩️ Back to menu</span>
-            </div>
+    const trackUrl = `track.html?order=${encodeURIComponent(orderNumber)}`;
+    const banner = document.createElement('div');
+    banner.className = 'order-banner';
+    banner.style.cssText = `
+        position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+        background: #2E7D32; color: white; padding: 14px 16px;
+        text-align: center; font-size: 0.9rem; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    `;
+    banner.innerHTML = `
+        <div style="font-weight:700; margin-bottom:4px;">✅ Order placed — ${orderNumber}</div>
+        <div style="font-size:0.82rem; opacity:0.95; margin-bottom:8px;">
+            ${messengerBlocked
+                ? 'Tap below to send your order to Messenger.'
+                : 'Your order was sent to Messenger. Check your chat!'}
+        </div>
+        <div style="display:flex; gap:8px; justify-content:center; flex-wrap:wrap;">
+            ${messengerBlocked ? `<button onclick="window.__sendReceiptToMessenger('${orderNumber}')" style="background:#0084FF; color:white; border:none; padding:8px 14px; border-radius:20px; font-weight:600; cursor:pointer; font-size:0.82rem;">📱 Open Messenger</button>` : ''}
+            <a href="${trackUrl}" style="background:rgba(255,255,255,0.2); color:white; padding:8px 14px; border-radius:20px; font-weight:600; text-decoration:none; font-size:0.82rem;">📦 Track my order</a>
+            <button onclick="this.closest('.order-banner').remove()" style="background:none; border:1px solid rgba(255,255,255,0.5); color:white; padding:8px 14px; border-radius:20px; cursor:pointer; font-size:0.82rem;">✕ Dismiss</button>
         </div>
     `;
-    document.body.appendChild(modal);
+    document.body.appendChild(banner);
 
-    window.__lastOrderData = data;
-    window.__lastOrderNumber = orderNumber;
+    // Auto-dismiss after a while so it doesn't linger forever
+    setTimeout(() => banner.remove(), 20000);
 }
 
 window.__sendReceiptToMessenger = function(orderNumber) {
