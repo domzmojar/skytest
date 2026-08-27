@@ -60,6 +60,15 @@
         .pill-unpaid { background: #FFEBEE; color: #C62828; }
         .pill-awaiting { background: #FFF3E0; color: #E65100; }
         .pill-paid { background: #E8F5E9; color: #2E7D32; }
+        .live-badge {
+            display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700;
+            color: #2E7D32; text-transform: uppercase; letter-spacing: 0.3px; justify-content: center;
+            margin-top: 6px;
+        }
+        .live-dot {
+            width: 7px; height: 7px; border-radius: 50%; background: #2E7D32; animation: pulse-dot 1.5s infinite;
+        }
+        @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
     </style>
 </head>
 <body>
@@ -88,6 +97,7 @@
         <div id="status-card" class="status-card">
             <div class="status-order-number" id="status-order-number"></div>
             <div class="status-total" id="status-total"></div>
+            <div class="live-badge"><span class="live-dot"></span> Live — updates automatically</div>
             <div id="cancelled-banner" class="status-cancelled-banner" style="display:none;">❌ This order was cancelled.</div>
 
             <div class="status-steps" id="status-steps"></div>
@@ -119,6 +129,8 @@
             { key: 'ready',     label: 'Ready',            icon: '📦' },
             { key: 'completed', label: 'Completed',        icon: '🎉' }
         ];
+
+        let orderChannel = null;
 
         function showToast(message, duration = 2500) {
             const toast = document.getElementById('toast');
@@ -165,26 +177,51 @@
             return d.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
         }
 
-        async function checkStatus() {
-            const raw = document.getElementById('order-input').value.trim().toUpperCase();
+        // ============================================
+        // REALTIME — subscribe to this order's row so status
+        // pushes to the customer instantly, no refresh needed
+        // ============================================
+        function subscribeToOrder(orderNumber) {
+            if (orderChannel) {
+                supabaseClient.removeChannel(orderChannel);
+                orderChannel = null;
+            }
+            orderChannel = supabaseClient
+                .channel(`track:${orderNumber}`)
+                .on('postgres_changes',
+                    { event: '*', schema: 'public', table: 'orders', filter: `order_number=eq.${orderNumber}` },
+                    () => checkStatus(true)
+                )
+                .subscribe();
+        }
+
+        async function checkStatus(silent = false) {
+            const raw = silent
+                ? document.getElementById('status-order-number').textContent
+                : document.getElementById('order-input').value.trim().toUpperCase();
             if (!raw) return showToast('⚠️ Please enter your order number');
 
-            document.getElementById('status-card').classList.remove('show');
-            document.getElementById('track-empty').style.display = 'none';
-            document.getElementById('loading').style.display = 'block';
+            if (!silent) {
+                document.getElementById('status-card').classList.remove('show');
+                document.getElementById('track-empty').style.display = 'none';
+                document.getElementById('loading').style.display = 'block';
+            }
 
             try {
                 const { data, error } = await supabaseClient.rpc('get_order_status', { p_order_number: raw });
-                document.getElementById('loading').style.display = 'none';
+                if (!silent) document.getElementById('loading').style.display = 'none';
 
                 if (error) throw error;
                 if (!data || data.length === 0) {
-                    document.getElementById('track-empty').style.display = 'block';
-                    document.getElementById('track-empty').innerHTML = `
-                        <p style="font-size:1.1rem; margin-bottom:8px;">❌ Order not found</p>
-                        <p>Double-check your order number and try again.</p>
-                    `;
-                    return showToast('❌ No order found with that number');
+                    if (!silent) {
+                        document.getElementById('track-empty').style.display = 'block';
+                        document.getElementById('track-empty').innerHTML = `
+                            <p style="font-size:1.1rem; margin-bottom:8px;">❌ Order not found</p>
+                            <p>Double-check your order number and try again.</p>
+                        `;
+                        showToast('❌ No order found with that number');
+                    }
+                    return;
                 }
 
                 const order = data[0];
@@ -205,11 +242,20 @@
                 }
 
                 document.getElementById('status-card').classList.add('show');
+
+                if (!silent) {
+                    subscribeToOrder(order.order_number);
+                } else {
+                    showToast('🔄 Order status updated!');
+                }
+
             } catch (err) {
                 console.error(err);
-                document.getElementById('loading').style.display = 'none';
-                document.getElementById('track-empty').style.display = 'block';
-                showToast('❌ Could not check order status. Try again.');
+                if (!silent) {
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('track-empty').style.display = 'block';
+                    showToast('❌ Could not check order status. Try again.');
+                }
             }
         }
 
