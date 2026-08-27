@@ -1420,35 +1420,15 @@ function animateCart() {
 }
 
 // ============================================
-// GENTLE REFRESH BANNER
+// TRACK ORDER — header button
+// Goes straight to the customer's last order if we have one
+// saved locally, otherwise to a blank tracking lookup.
 // ============================================
-function showRefreshPrompt() {
-    if (refreshPromptCount >= MAX_REFRESH_PROMPTS) return;
-    const prompt = document.createElement('div');
-    prompt.className = 'refresh-prompt';
-    prompt.innerHTML = `
-        <div class="refresh-prompt-content">
-            <span class="refresh-icon">🔄</span>
-            <div class="refresh-text">
-                <strong>Stock may have changed?</strong>
-                <small>Check for updates</small>
-            </div>
-            <button class="refresh-now-btn" onclick="handleRefreshClick()">Check Now</button>
-            <button class="refresh-close-btn" onclick="this.closest('.refresh-prompt').remove()">✕</button>
-        </div>
-    `;
-    document.body.prepend(prompt);
-    refreshPromptCount++;
-}
-
-window.handleRefreshClick = function() {
-    loadProducts(true);
-    document.querySelectorAll('.refresh-prompt').forEach(el => el.remove());
-};
-
-window.forceStockRefresh = function() {
-    loadProducts(true);
-    showToast("🔄 Manual refresh triggered");
+window.goToTrackOrder = function() {
+    const lastOrder = localStorage.getItem('lastOrderNumber');
+    window.location.href = lastOrder
+        ? `track.html?order=${encodeURIComponent(lastOrder)}`
+        : 'track.html';
 };
 
 // ============================================
@@ -1461,7 +1441,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('open-cart-btn').onclick = () => {
         document.getElementById('cart-modal').classList.add('active');
     };
-    setTimeout(showRefreshPrompt, 10000);
 
     const orderTypeSelect = document.getElementById('order-type');
     const paymentMethodSelect = document.getElementById('payment-method');

@@ -18,8 +18,11 @@
                 <h1>Sky Sweet Treats</h1>
                 <p>Make your day sweet with Sky Sweet Treats! Sky ang limit! 🍰✨</p>
             </div>
-            <!-- Announcement icon – hidden by default, shown via JS -->
-            <button id="announcement-icon" class="announcement-icon" onclick="showAnnouncementManually()" title="View announcement" style="display:none;">📢</button>
+            <div class="header-actions" style="display:flex; align-items:center; gap:8px;">
+                <button id="track-order-btn" onclick="goToTrackOrder()" title="Track my order" style="background:#fff; color:#2E7D32; border:none; padding:8px 14px; border-radius:20px; font-weight:700; font-size:0.78rem; cursor:pointer; white-space:nowrap; box-shadow:0 1px 4px rgba(0,0,0,0.15);">📦 Track Order</button>
+                <!-- Announcement icon – hidden by default, shown via JS -->
+                <button id="announcement-icon" class="announcement-icon" onclick="showAnnouncementManually()" title="View announcement" style="display:none;">📢</button>
+            </div>
         </div>
     </header>
 
@@ -157,7 +160,6 @@
     </div>
 
     <div id="toast" class="toast"></div>
-    <button class="admin-refresh-btn" onclick="forceStockRefresh()" title="Refresh Stock">🔄</button>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
