@@ -13,8 +13,6 @@ const supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.s
 let products = [];
 let cart = [];
 let hasCopied = false; // kept for backward compatibility, but copy button removed
-let refreshPromptCount = 0;
-const MAX_REFRESH_PROMPTS = 1;
 let toastTimeout = null;
 
 // Shipping state
