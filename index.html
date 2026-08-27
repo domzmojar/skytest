@@ -60,7 +60,7 @@
                 <h2>💳 Checkout Details</h2>
                 <button onclick="closeModal('checkout-modal')" class="close-btn">&times;</button>
             </div>
-            
+
             <div class="checkout-body">
                 <!-- ORDER TYPE -->
                 <div class="option-group">
@@ -148,10 +148,9 @@
                     <div id="shipping-summary" style="margin-top:10px; padding-top:10px; border-top:1px dashed #ccc;"></div>
                 </div>
             </div>
-            
+
             <div class="modal-footer">
-                <!-- COPY BUTTON REMOVED – only Messenger button remains -->
-                <button id="messenger-btn" onclick="sendToMessenger()" class="btn-primary" style="background:#0084FF;">📱 Send my order</button>
+                <button id="messenger-btn" onclick="submitOrder()" class="btn-primary" style="background:#0084FF;">📱 Send my order</button>
                 <span class="back-to-menu-link" onclick="closeModal('checkout-modal')">↩️ Go back to menu</span>
             </div>
         </div>
@@ -160,6 +159,7 @@
     <div id="toast" class="toast"></div>
     <button class="admin-refresh-btn" onclick="forceStockRefresh()" title="Refresh Stock">🔄</button>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="app.js"></script>
 </body>
 </html>

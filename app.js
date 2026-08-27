@@ -3,8 +3,12 @@ const CONFIG = {
     messengerUrl: "https://m.me/100089330907916",
     sheetUrl: "https://docs.google.com/spreadsheets/d/e/2PACX-1vRBquyZXkcMOzDv_14qyXq7sQvxqQ6k1l6tWZsiqspZ_mgl88Lqx08h3wUVYu9W9-MIP-ja5f-Yvtsj/pub?gid=1109857950&single=true&output=csv",
     businessPhone: "09264569430",
-    businessHours: "8:00 AM - 9:00 PM"
+    businessHours: "8:00 AM - 9:00 PM",
+    supabaseUrl: "https://rmtberbypsjcydomvhvu.supabase.co",
+    supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGJlcmJ5cHNqY3lkb212aHZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTU0NDYsImV4cCI6MjEwMzM5MTQ0Nn0.mgo9Cj8ManeLMF9DVA__7a4iAZ7OmYu81NkAEY7Pov0"
 };
+
+const supabaseClient = window.supabase.createClient(CONFIG.supabaseUrl, CONFIG.supabaseAnonKey);
 
 let products = [];
 let cart = [];
@@ -30,32 +34,11 @@ let currentSlide = 0;
 let carouselInterval = null;
 
 // ============================================
-// CSV ROW PARSER – handles quoted fields
-// ============================================
-function parseCSVRow(row) {
-    const result = [];
-    let inQuote = false;
-    let currentField = '';
-    for (let i = 0; i < row.length; i++) {
-        const char = row[i];
-        if (char === '"') {
-            inQuote = !inQuote;
-        } else if (char === ',' && !inQuote) {
-            result.push(currentField);
-            currentField = '';
-        } else {
-            currentField += char;
-        }
-    }
-    result.push(currentField);
-    return result;
-}
-
-// ============================================
-// CONVERT GOOGLE DRIVE LINK TO THUMBNAIL URL
+// CONVERT GOOGLE DRIVE LINK TO THUMBNAIL URL (kept for legacy image links)
 // ============================================
 function convertGoogleDriveLink(url) {
     if (!url) return url;
+    if (!url.includes('drive.google.com')) return url;
     const patterns = [
         /(?:https?:\/\/)?drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/,
         /(?:https?:\/\/)?drive\.google\.com\/open\?id=([a-zA-Z0-9_-]+)/,
@@ -73,100 +56,57 @@ function convertGoogleDriveLink(url) {
 }
 
 // ============================================
-// LOAD PRODUCTS + ANNOUNCEMENT + SHIPPING OPTIONS + BANNERS
+// LOAD PRODUCTS + ANNOUNCEMENT + SHIPPING OPTIONS + BANNERS (from Supabase)
 // ============================================
 async function loadProducts(showToastOnSuccess = true) {
     try {
-        const response = await fetch(`${CONFIG.sheetUrl}&t=${Date.now()}`);
-        const data = await response.text();
-        const lines = data.split('\n');
-        const rows = lines.slice(1).filter(line => line.trim() !== '');
+        const [{ data: items, error: itemsErr }, { data: zones, error: zonesErr }, { data: bannerRows, error: bannersErr }, { data: annRows, error: annErr }] = await Promise.all([
+            supabaseClient.from('menu_items').select('*').order('sort_order', { ascending: true }),
+            supabaseClient.from('shipping_zones').select('*').eq('active', true),
+            supabaseClient.from('banners').select('*').eq('active', true).order('sort_order', { ascending: true }),
+            supabaseClient.from('announcements').select('*').eq('active', true).order('created_at', { ascending: false }).limit(1)
+        ]);
 
-        const allProducts = [];
-        const distanceRows = [];
-        const bannerRows = [];
-        let announcementRow = null;
+        if (itemsErr) throw itemsErr;
+        if (zonesErr) throw zonesErr;
+        if (bannersErr) throw bannersErr;
+        if (annErr) throw annErr;
 
-        rows.forEach(row => {
-            const cols = parseCSVRow(row);
-            const id = cols[0]?.trim();
-
-            if (!id) return;
-
-            if (id === 'ANNOUNCE') {
-                announcementRow = cols;
-            } else if (id === 'DIST') {
-                distanceRows.push(cols);
-            } else if (id === 'BANNER') {
-                bannerRows.push(cols);
-            } else if (id !== 'id') {
-                allProducts.push(cols);
-            }
-        });
-
-        if (announcementRow) {
-            const title = announcementRow[1]?.trim();
-            const message = announcementRow[5]?.trim();
-            const status = announcementRow[6]?.trim();
-            if (status && status.toLowerCase() === 'active' && title && message) {
-                currentAnnouncement = { title, message };
-            } else {
-                currentAnnouncement = null;
-            }
+        if (annRows && annRows.length > 0) {
+            currentAnnouncement = { title: annRows[0].title, message: annRows[0].message };
         } else {
             currentAnnouncement = null;
         }
 
-        const shippingOptions = distanceRows.map(cols => ({
-            name: cols[1]?.trim(),
-            fee: parseFloat(cols[4]) || 0
-        })).filter(opt => opt.name && opt.fee > 0);
+        const shippingOptions = (zones || []).map(z => ({
+            name: z.name,
+            fee: parseFloat(z.fee) || 0
+        })).filter(opt => opt.name && opt.fee >= 0);
 
         if (shippingOptions.length > 0) {
             renderShippingDropdown(shippingOptions);
         }
 
-        banners = bannerRows.map(cols => ({
-            alt: cols[1]?.trim() || 'Banner',
-            image: convertGoogleDriveLink(cols[11]?.trim() || '')
+        banners = (bannerRows || []).map(b => ({
+            alt: b.alt || 'Banner',
+            image: convertGoogleDriveLink(b.image || '')
         })).filter(banner => banner.image);
 
         renderHeroCarousel();
 
-        products = allProducts.map(cols => {
-            const id = cols[0]?.trim();
-            const name = cols[1]?.trim();
-            const badge = cols[2]?.trim() || '';
-            const category = cols[3]?.trim() || 'Uncategorized';
-            const price = parseFloat(cols[4]) || 0;
-            const details = cols[5]?.trim() || '';
-            const status = cols[6]?.trim();
-            const stock = parseInt(cols[7]) || 0;
-            
-            let variant_option_raw = cols[8]?.trim() || '';
-            let flavorArray = variant_option_raw
-                .split(',')
-                .map(f => f.trim())
-                .filter(f => f.length > 0);
-
-            const has_flavors = flavorArray.length > 0;
-
-            let unavailable_raw = cols[10]?.trim() || '';
-            let unavailableArray = unavailable_raw
-                .split(',')
-                .map(f => f.trim())
-                .filter(f => f.length > 0);
-
-            const image = convertGoogleDriveLink(cols[11]?.trim() || '');
-
-            return {
-                id, name, badge, category, price, details, status, stock,
-                variant_option: flavorArray,
-                unavailable_flavors: unavailableArray,
-                has_flavors,
-                image
-            };
-        }).filter(p => p.id && p.name);
+        products = (items || []).map(p => ({
+            id: p.id,
+            name: p.name,
+            badge: p.badge || '',
+            category: p.category || 'Uncategorized',
+            price: parseFloat(p.price) || 0,
+            details: p.details || '',
+            stock: p.stock || 0,
+            variant_option: p.variant_options || [],
+            unavailable_flavors: p.unavailable_flavors || [],
+            has_flavors: (p.variant_options || []).length > 0,
+            image: convertGoogleDriveLink(p.image || '')
+        })).filter(p => p.id && p.name);
 
         renderCategoriesAndMenu();
         validateCartAgainstNewStock();
@@ -198,6 +138,18 @@ async function loadProducts(showToastOnSuccess = true) {
             showToast("❌ Could not update stock. Check connection.");
         }
     }
+}
+
+// ============================================
+// LIVE STOCK + ORDER UPDATES VIA SUPABASE REALTIME
+// ============================================
+function setupRealtimeSync() {
+    supabaseClient
+        .channel('public:menu_items')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, () => {
+            loadProducts(false);
+        })
+        .subscribe();
 }
 
 // ============================================
@@ -370,7 +322,7 @@ function showAnnouncementModal(dismissOnClose = false) {
     document.body.appendChild(modal);
 
     const closeBtn = modal.querySelector('.announcement-close');
-    
+
     const closeHandler = () => {
         modal.remove();
         if (dismissOnClose) {
@@ -397,7 +349,7 @@ function showAnnouncementIfNeeded() {
         if (announcementIcon) announcementIcon.style.display = 'none';
         return;
     }
-    
+
     if (!announcementIcon) {
         announcementIcon = document.getElementById('announcement-icon');
     }
@@ -430,7 +382,7 @@ window.toggleAmountInput = function() {
     const amountContainer = document.getElementById('amount-input-container');
     const changeContainer = document.getElementById('change-due-container');
     const amountInput = document.getElementById('customer-amount');
-    
+
     if (exactNo && exactNo.checked) {
         amountContainer.style.display = 'block';
         changeContainer.style.display = 'block';
@@ -452,7 +404,7 @@ window.updateChangeDue = function() {
     const amountInput = document.getElementById('customer-amount');
     const changeSpan = document.getElementById('change-due-amount');
     const total = getTotal();
-    
+
     if (amountInput && amountInput.value) {
         const amount = parseFloat(amountInput.value);
         if (!isNaN(amount) && amount >= total) {
@@ -475,17 +427,14 @@ function resetExactAmount() {
     const amountContainer = document.getElementById('amount-input-container');
     const changeContainer = document.getElementById('change-due-container');
     const amountInput = document.getElementById('customer-amount');
-    
-    // Uncheck all radios
+
     radios.forEach(r => r.checked = false);
-    
-    // Hide and clear amount input
+
     amountContainer.style.display = 'none';
     changeContainer.style.display = 'none';
     amountInput.value = '';
     amountInput.required = false;
-    
-    // Update change display
+
     updateChangeDue();
 }
 
@@ -498,7 +447,7 @@ window.toggleDeliveryFields = function() {
     const landmarkGroup = document.getElementById('landmark-group');
     const landmarkField = document.getElementById('customer-address');
     const paymentSelect = document.getElementById('payment-method');
-    
+
     if (orderType === 'Delivery') {
         shippingGroup.style.display = 'block';
         landmarkGroup.style.display = 'block';
@@ -515,10 +464,10 @@ window.toggleDeliveryFields = function() {
         if (feeDisplay) feeDisplay.innerHTML = '';
         updateUI();
     }
-    
+
     const codOption = paymentSelect.querySelector('option[value="COD"]');
     const copOption = paymentSelect.querySelector('option[value="COP"]');
-    
+
     if (orderType === 'Delivery') {
         codOption.style.display = 'block';
         copOption.style.display = 'none';
@@ -543,22 +492,17 @@ function toggleGcashInfo() {
     const isGcash = document.getElementById('payment-method').value === 'GCASH';
     const gcashInfo = document.getElementById('gcash-info');
     const exactGroup = document.getElementById('exact-amount-group');
-    
+
     gcashInfo.style.display = isGcash ? 'block' : 'none';
-    
-    // Reset exact amount selection regardless of mode (clean slate)
+
     resetExactAmount();
-    
+
     if (isGcash) {
-        // Hide exact amount section
         exactGroup.style.display = 'none';
-        // Radios already unchecked and cleared by resetExactAmount
     } else {
-        // Show exact amount section
         exactGroup.style.display = 'block';
-        // Radios are unchecked; user must choose again
     }
-    
+
     if (isGcash) showToast("💳 GCash selected – exact amount not needed", 3000);
 }
 
@@ -615,7 +559,7 @@ function renderCategoriesAndMenu() {
     categoryMap.forEach((productsInCat, category) => {
         const safeId = category.replace(/\s+/g, '-').toLowerCase();
         gridHtml += `<div id="cat-${safeId}" class="category-heading">${category}</div>`;
-        
+
         productsInCat.forEach((prod, index) => {
             if (prod.has_flavors && prod.variant_option.length > 0) {
                 gridHtml += renderFlavorProductCard(prod);
@@ -746,8 +690,8 @@ function renderSimpleProductCard(p) {
     let detailsHtml = '';
     if (p.details) {
         const lines = p.details.split(',').map(item => item.trim()).filter(item => item);
-        detailsHtml = '<div class="product-details-text">' + 
-            lines.map(line => `<span>${line}</span>`).join('') + 
+        detailsHtml = '<div class="product-details-text">' +
+            lines.map(line => `<span>${line}</span>`).join('') +
             '</div>';
     }
 
@@ -805,8 +749,8 @@ function renderFlavorProductCard(p) {
     let detailsHtml = '';
     if (p.details) {
         const lines = p.details.split(',').map(item => item.trim()).filter(item => item);
-        detailsHtml = '<div class="product-details-text">' + 
-            lines.map(line => `<span>${line}</span>`).join('') + 
+        detailsHtml = '<div class="product-details-text">' +
+            lines.map(line => `<span>${line}</span>`).join('') +
             '</div>';
     }
 
@@ -983,7 +927,7 @@ window.updateShippingFee = function() {
     const select = document.getElementById('shipping-address');
     const selected = select.value;
     const feeDisplay = document.getElementById('shipping-fee-display');
-    
+
     if (feeDisplay) {
         feeDisplay.innerHTML = '';
         feeDisplay.classList.add('loading');
@@ -999,7 +943,7 @@ window.updateShippingFee = function() {
             selectedShippingAddress = '';
             selectedShippingFee = 0;
         }
-        
+
         if (feeDisplay) {
             if (selectedShippingFee > 0) {
                 feeDisplay.innerHTML = `+₱${selectedShippingFee.toFixed(2)}`;
@@ -1009,7 +953,7 @@ window.updateShippingFee = function() {
                 feeDisplay.classList.remove('loading');
             }
         }
-        
+
         animateTotalUpdate();
         updateUI();
         if (document.getElementById('checkout-modal').classList.contains('active')) {
@@ -1037,7 +981,7 @@ function updateCheckoutSummary() {
     const shippingEl = document.getElementById('shipping-summary');
     const exactNo = document.querySelector('input[name="exact-amount"][value="no"]');
     const amountInput = document.getElementById('customer-amount');
-    
+
     let changeHtml = '';
     if (exactNo && exactNo.checked && amountInput && amountInput.value) {
         const amount = parseFloat(amountInput.value);
@@ -1051,7 +995,7 @@ function updateCheckoutSummary() {
             `;
         }
     }
-    
+
     if (selectedShippingAddress && document.getElementById('order-type').value === 'Delivery') {
         shippingEl.innerHTML = `
             <div class="shipping-line" style="font-weight:700; color:var(--primary); margin-top:8px;">
@@ -1110,14 +1054,16 @@ window.openCheckout = () => {
     updateCheckoutSummary();
 };
 
-// Helper to build order text (used by sendToMessenger)
-function buildOrderText() {
+// ============================================
+// COLLECT + VALIDATE CHECKOUT FORM DATA
+// (returns null if invalid; shows toast explaining why)
+// ============================================
+function collectCheckoutData() {
     const name = document.getElementById('customer-name').value.trim();
     const landmark = document.getElementById('customer-address').value.trim();
     const type = document.getElementById('order-type').value;
     const pay = document.getElementById('payment-method').value;
-    
-    // For GCash, skip exact amount validation
+
     if (pay !== 'GCASH') {
         const exactAmountRadio = document.querySelector('input[name="exact-amount"]:checked');
         if (!exactAmountRadio) {
@@ -1125,19 +1071,16 @@ function buildOrderText() {
             return null;
         }
     }
-    
-    // Determine display texts
-    let exactDisplay = '';
+
+    let exactAmount = null;
     let customerAmount = null;
     let changeDue = null;
-    
-    if (pay === 'GCASH') {
-        exactDisplay = 'N/A (GCash)';
-    } else {
+
+    if (pay !== 'GCASH') {
         const exactAmountRadio = document.querySelector('input[name="exact-amount"]:checked');
-        exactDisplay = exactAmountRadio.value === 'yes' ? 'Yes, exact amount akon ibayad' : 'No, kalambyuhan akon ibayad';
-        
-        if (exactAmountRadio.value === 'no') {
+        exactAmount = exactAmountRadio.value === 'yes';
+
+        if (!exactAmount) {
             const amountInput = document.getElementById('customer-amount');
             if (!amountInput.value || isNaN(parseFloat(amountInput.value))) {
                 showToast("💵 Please enter the amount you will pay");
@@ -1152,12 +1095,12 @@ function buildOrderText() {
             changeDue = customerAmount - total;
         }
     }
-    
+
     if (!name) {
         showToast("👤 Please enter your name");
         return null;
     }
-    
+
     if (type === 'Delivery') {
         if (!selectedShippingAddress) {
             showToast("📍 Please select your shipping address");
@@ -1168,9 +1111,22 @@ function buildOrderText() {
             return null;
         }
     }
-    
-    const subtotal = getSubtotal();
-    const total = getTotal();
+
+    return {
+        name, landmark, type, pay,
+        exactAmount, customerAmount, changeDue,
+        subtotal: getSubtotal(),
+        total: getTotal(),
+        shippingAddress: selectedShippingAddress,
+        shippingFee: selectedShippingFee
+    };
+}
+
+// ============================================
+// BUILD HUMAN-READABLE RECEIPT TEXT (for Messenger)
+// ============================================
+function buildOrderText(data, orderNumber) {
+    const { name, landmark, type, pay, exactAmount, customerAmount, changeDue, subtotal, total, shippingAddress, shippingFee } = data;
 
     const now = new Date();
     const dateStr = now.toLocaleDateString('en-PH', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
@@ -1181,19 +1137,21 @@ function buildOrderText() {
     else if (pay === 'COP') paymentDisplay = 'Cash on Pickup';
     else paymentDisplay = 'GCash';
 
+    let exactDisplay = pay === 'GCASH' ? 'N/A (GCash)' : (exactAmount ? 'Yes, exact amount akon ibayad' : 'No, kalambyuhan akon ibayad');
+
     let text = `✨ SKY SWEET TREATS ✨\n`;
     text += `════════════════\n`;
 
     text += `📋 **ORDER RECEIPT**\n`;
     text += `📅 ${dateStr}\n`;
     text += `⏰ ${timeStr}\n`;
-    text += `🆔 #${Date.now().toString().slice(-6)}\n`;
+    text += `🆔 ${orderNumber}\n`;
     text += `════════════════\n`;
 
     text += `👤 **CUSTOMER DETAILS**\n`;
     text += `• Name: ${name}\n`;
     if (type === 'Delivery') {
-        text += `• Shipping Address: ${selectedShippingAddress}\n`;
+        text += `• Shipping Address: ${shippingAddress}\n`;
         text += `• Landmark/Instructions: ${landmark}\n`;
     }
     text += `• Order Type: ${type}\n`;
@@ -1205,9 +1163,9 @@ function buildOrderText() {
     }
     text += `\n`;
 
-    if (type === 'Delivery' && selectedShippingAddress) {
+    if (type === 'Delivery' && shippingAddress) {
         text += `🚚 **SHIPPING**\n`;
-        text += `• Shipping Fee: ₱${selectedShippingFee.toFixed(2)}\n\n`;
+        text += `• Shipping Fee: ₱${shippingFee.toFixed(2)}\n\n`;
     }
 
     text += `════════════════\n`;
@@ -1219,8 +1177,8 @@ function buildOrderText() {
 
     text += `💰 **PAYMENT SUMMARY**\n`;
     text += `• Subtotal: ₱${subtotal.toFixed(2)}\n`;
-    if (type === 'Delivery' && selectedShippingFee > 0) {
-        text += `• Shipping Fee: ₱${selectedShippingFee.toFixed(2)}\n`;
+    if (type === 'Delivery' && shippingFee > 0) {
+        text += `• Shipping Fee: ₱${shippingFee.toFixed(2)}\n`;
     }
     text += `• Total Amount: ₱${total.toFixed(2)}\n`;
     if (customerAmount !== null) {
@@ -1250,21 +1208,105 @@ function buildOrderText() {
 }
 
 // ============================================
-// SEND TO MESSENGER (no copy button, only send)
+// SUBMIT ORDER TO SUPABASE, THEN SHOW CONFIRMATION
 // ============================================
-window.sendToMessenger = function() {
-    const text = buildOrderText();
-    if (!text) return;
-    
-    // Copy to clipboard as fallback (in case pre‑fill doesn't work)
+window.submitOrder = async function() {
+    const data = collectCheckoutData();
+    if (!data) return;
+
+    const submitBtn = document.getElementById('messenger-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.textContent = '⏳ Placing your order...';
+    }
+
+    const items = cart.map(i => ({
+        product_id: i.parentId || i.id,
+        product_name: i.name,
+        flavor: i.flavor || null,
+        price: i.price,
+        qty: i.qty
+    }));
+
+    try {
+        const { data: orderNumber, error } = await supabaseClient.rpc('place_order', {
+            p_customer_name: data.name,
+            p_customer_phone: null,
+            p_order_type: data.type,
+            p_landmark: data.landmark || null,
+            p_shipping_zone: data.shippingAddress || null,
+            p_shipping_fee: data.shippingFee,
+            p_payment_method: data.pay,
+            p_exact_amount: data.exactAmount,
+            p_amount_given: data.customerAmount,
+            p_change_due: data.changeDue,
+            p_subtotal: data.subtotal,
+            p_total: data.total,
+            p_items: items
+        });
+
+        if (error) throw error;
+
+        localStorage.setItem('lastOrderNumber', orderNumber);
+        showOrderConfirmation(orderNumber, data);
+
+        cart = [];
+        updateUI();
+        loadProducts(false);
+
+    } catch (err) {
+        console.error('Error placing order:', err);
+        showToast('❌ Could not place order. Please check your connection and try again.', 4000);
+    } finally {
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.textContent = '📱 Send my order';
+        }
+    }
+};
+
+// ============================================
+// ORDER CONFIRMATION MODAL – shows order #, lets customer track status
+// or optionally still send the receipt to Messenger
+// ============================================
+function showOrderConfirmation(orderNumber, data) {
+    document.getElementById('checkout-modal').classList.remove('active');
+
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.id = 'confirmation-modal';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>✅ Order placed!</h2>
+                <button onclick="document.getElementById('confirmation-modal').remove()" class="close-btn">&times;</button>
+            </div>
+            <div class="checkout-body" style="text-align:center; padding: 20px 0;">
+                <p style="font-size:15px; color:var(--text-light,#666);">Your order number is</p>
+                <p style="font-size:28px; font-weight:700; color:var(--primary); margin:8px 0 20px;">${orderNumber}</p>
+                <p style="font-size:14px; color:var(--text-light,#666);">We'll review your order shortly. You can check its status anytime on the tracking page — no need to guess!</p>
+            </div>
+            <div class="modal-footer">
+                <a href="track.html?order=${encodeURIComponent(orderNumber)}" class="btn-primary" style="display:block; text-align:center; text-decoration:none;">📦 Track my order</a>
+                <button onclick="window.__sendReceiptToMessenger('${orderNumber}')" class="btn-primary" style="background:#0084FF;">📱 Also send receipt to Messenger</button>
+                <span class="back-to-menu-link" onclick="document.getElementById('confirmation-modal').remove()">↩️ Back to menu</span>
+            </div>
+        </div>
+    `;
+    document.body.appendChild(modal);
+
+    window.__lastOrderData = data;
+    window.__lastOrderNumber = orderNumber;
+}
+
+window.__sendReceiptToMessenger = function(orderNumber) {
+    const data = window.__lastOrderData;
+    if (!data) return;
+    const text = buildOrderText(data, orderNumber);
     navigator.clipboard.writeText(text).catch(() => {});
-    
     const encodedText = encodeURIComponent(text);
-    const messengerUrl = `${CONFIG.messengerUrl}?text=${encodedText}`;
-    
-    window.open(messengerUrl, '_blank');
-    
-    showToast("📱 Messenger opened – message is pre‑filled!", 3000);
+    window.open(`${CONFIG.messengerUrl}?text=${encodedText}`, '_blank');
+    showToast("📱 Messenger opened – message is pre-filled!", 3000);
 };
 
 // ============================================
@@ -1403,7 +1445,8 @@ window.forceStockRefresh = function() {
 // ============================================
 document.addEventListener('DOMContentLoaded', () => {
     loadProducts(false);
-    
+    setupRealtimeSync();
+
     document.getElementById('open-cart-btn').onclick = () => {
         document.getElementById('cart-modal').classList.add('active');
     };
@@ -1419,7 +1462,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     toggleDeliveryFields();
-    toggleGcashInfo(); // ensure initial state (GCash not selected, so exact amount visible)
+    toggleGcashInfo();
 
     selectedShippingAddress = '';
     selectedShippingFee = 0;
