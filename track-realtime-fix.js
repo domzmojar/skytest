@@ -1,12 +1,12 @@
 /*
  * Sky Sweet Treats customer tracking realtime fix
  *
- * The orders table is intentionally not publicly readable, so Postgres Changes
- * cannot be used by the anonymous tracking page. This switches the live part
- * to Supabase Realtime Broadcast, using the random tracking token as the topic.
+ * Customer order rows are protected by RLS, so the tracking page uses
+ * Supabase Realtime Broadcast on a private, token-specific channel.
  */
 (function () {
     let liveChannel = null;
+    let subscribedTopic = '';
 
     function getTrackingToken() {
         const params = new URLSearchParams(window.location.search);
@@ -17,29 +17,60 @@
         return document.getElementById('status-order-number').textContent.trim();
     }
 
-    function unsubscribeLive() {
+    async function unsubscribeLive() {
         if (liveChannel) {
-            supabaseClient.removeChannel(liveChannel);
+            try {
+                await supabaseClient.removeChannel(liveChannel);
+            } catch (error) {
+                console.warn('Tracking realtime unsubscribe warning:', error);
+            }
             liveChannel = null;
+            subscribedTopic = '';
         }
     }
 
-    function subscribeToOrderBroadcast(orderNumber) {
-        unsubscribeLive();
-
+    async function subscribeToOrderBroadcast(orderNumber) {
         const token = getTrackingToken();
         if (!token || !orderNumber) return;
 
         const topic = `track:${token}`;
+        if (liveChannel && subscribedTopic === topic) return;
+
+        await unsubscribeLive();
+
+        // Private Broadcast channels require Realtime authorization.
+        // Supabase's current docs recommend refreshing the Realtime auth
+        // token before subscribing to an authorized channel.
+        try {
+            await supabaseClient.realtime.setAuth();
+        } catch (authError) {
+            console.error('Tracking realtime auth error:', authError);
+            return;
+        }
+
         liveChannel = supabaseClient
-            .channel(topic)
+            .channel(topic, {
+                config: { private: true }
+            })
             .on('broadcast', { event: 'order_status_updated' }, (payload) => {
                 const payloadOrderNumber = payload?.payload?.order_number;
                 if (payloadOrderNumber && payloadOrderNumber !== orderNumber) return;
-                checkStatus(true);
+
+                console.log('Tracking realtime event received:', payload);
+                window.checkStatus(true);
             })
             .subscribe((status, error) => {
                 console.log('Tracking realtime status:', status, error || '');
+
+                if (status === 'SUBSCRIBED') {
+                    subscribedTopic = topic;
+                    console.log('Tracking realtime connected:', topic);
+                }
+
+                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                    subscribedTopic = '';
+                    console.error('Tracking realtime connection problem:', status, error || '');
+                }
             });
     }
 
@@ -83,7 +114,7 @@
                         '<p>Use the tracking link from your order confirmation.</p>';
                     showToast('❌ Order not found');
                 }
-                unsubscribeLive();
+                await unsubscribeLive();
                 return;
             }
 
@@ -97,7 +128,7 @@
             document.getElementById('status-note-box').style.display = 'none';
             document.getElementById('status-card').classList.add('show');
 
-            subscribeToOrderBroadcast(order.order_number);
+            await subscribeToOrderBroadcast(order.order_number);
 
             if (silent) showToast('🔄 Order status updated!');
 
@@ -118,16 +149,14 @@
         }
     };
 
-    window.addEventListener('beforeunload', unsubscribeLive);
-
-    window.addEventListener('DOMContentLoaded', () => {
-        const params = new URLSearchParams(window.location.search);
-        const orderParam = params.get('order');
-        const tokenParam = params.get('token');
-
-        if (orderParam && tokenParam) {
-            document.getElementById('order-input').value = orderParam;
-            checkStatus();
+    window.addEventListener('beforeunload', () => {
+        if (liveChannel) {
+            supabaseClient.removeChannel(liveChannel);
+            liveChannel = null;
         }
     });
+
+    // The original track.html DOMContentLoaded handler already calls
+    // checkStatus(). We only override checkStatus here so we do not start
+    // two competing tracking subscriptions.
 })();
