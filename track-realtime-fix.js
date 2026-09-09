@@ -1,8 +1,9 @@
 /*
  * Sky Sweet Treats customer tracking realtime fix
  *
- * Customer order rows are protected by RLS, so the tracking page uses
- * Supabase Realtime Broadcast on a private, token-specific channel.
+ * Customer tracking is anonymous, so use a PUBLIC token-specific Broadcast
+ * channel. The tracking token makes the topic difficult to guess, while the
+ * order itself remains protected behind get_order_status().
  */
 (function () {
     let liveChannel = null;
@@ -14,19 +15,19 @@
     }
 
     function getOrderNumber() {
-        return document.getElementById('status-order-number').textContent.trim();
+        const el = document.getElementById('status-order-number');
+        return el ? el.textContent.trim() : '';
     }
 
     async function unsubscribeLive() {
-        if (liveChannel) {
-            try {
-                await supabaseClient.removeChannel(liveChannel);
-            } catch (error) {
-                console.warn('Tracking realtime unsubscribe warning:', error);
-            }
-            liveChannel = null;
-            subscribedTopic = '';
+        if (!liveChannel) return;
+        try {
+            await supabaseClient.removeChannel(liveChannel);
+        } catch (error) {
+            console.warn('Tracking realtime unsubscribe warning:', error);
         }
+        liveChannel = null;
+        subscribedTopic = '';
     }
 
     async function subscribeToOrderBroadcast(orderNumber) {
@@ -38,25 +39,25 @@
 
         await unsubscribeLive();
 
-        // Private Broadcast channels require Realtime authorization.
-        // Supabase's current docs recommend refreshing the Realtime auth
-        // token before subscribing to an authorized channel.
-        try {
-            await supabaseClient.realtime.setAuth();
-        } catch (authError) {
-            console.error('Tracking realtime auth error:', authError);
-            return;
-        }
-
+        // IMPORTANT: this customer page is anonymous. Do NOT use
+        // config.private=true or realtime.setAuth(). The database trigger
+        // sends this event as a public broadcast (private=false).
         liveChannel = supabaseClient
             .channel(topic, {
-                config: { private: true }
+                config: {
+                    private: false,
+                    broadcast: {
+                        self: false
+                    }
+                }
             })
-            .on('broadcast', { event: 'order_status_updated' }, (payload) => {
-                const payloadOrderNumber = payload?.payload?.order_number;
+            .on('broadcast', { event: 'order_status_updated' }, (message) => {
+                const payload = message && message.payload ? message.payload : {};
+                const payloadOrderNumber = payload.order_number;
+
                 if (payloadOrderNumber && payloadOrderNumber !== orderNumber) return;
 
-                console.log('Tracking realtime event received:', payload);
+                console.log('Tracking realtime event received:', message);
                 window.checkStatus(true);
             })
             .subscribe((status, error) => {
@@ -65,9 +66,7 @@
                 if (status === 'SUBSCRIBED') {
                     subscribedTopic = topic;
                     console.log('Tracking realtime connected:', topic);
-                }
-
-                if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+                } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
                     subscribedTopic = '';
                     console.error('Tracking realtime connection problem:', status, error || '');
                 }
@@ -130,9 +129,10 @@
 
             await subscribeToOrderBroadcast(order.order_number);
 
-            if (silent) showToast('🔄 Order status updated!');
+            if (silent) {
+                showToast('🔄 Order status updated!');
+            }
 
-            // Keep the URL in sync so a refresh continues to work.
             if (!params.get('token')) {
                 const url = new URL(window.location.href);
                 url.searchParams.set('order', order.order_number);
@@ -155,8 +155,4 @@
             liveChannel = null;
         }
     });
-
-    // The original track.html DOMContentLoaded handler already calls
-    // checkStatus(). We only override checkStatus here so we do not start
-    // two competing tracking subscriptions.
 })();
