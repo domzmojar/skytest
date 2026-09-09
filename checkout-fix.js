@@ -22,7 +22,15 @@
     function addTrackingTokenToReceipt(text, orderNumber, trackingToken) {
         const oldUrl = `track.html?order=${encodeURIComponent(orderNumber)}`;
         const newUrl = `track.html?order=${encodeURIComponent(orderNumber)}&token=${encodeURIComponent(trackingToken)}`;
-        return String(text).replace(oldUrl, newUrl);
+        const updated = String(text).replace(oldUrl, newUrl);
+
+        if (updated !== String(text)) return updated;
+
+        const fallbackUrl = `${window.location.origin}/track.html?order=${encodeURIComponent(orderNumber)}&token=${encodeURIComponent(trackingToken)}`;
+        return String(text).replace(
+            `Track: ${window.location.origin}/track.html?order=${encodeURIComponent(orderNumber)}`,
+            `Track: ${fallbackUrl}`
+        );
     }
 
     window.submitOrder = async function () {
@@ -43,6 +51,16 @@
             price: i.price,
             qty: i.qty
         }));
+
+        // Pre-open Messenger from the user's button click so the later
+        // redirect is less likely to be blocked as a popup.
+        let messengerWindow = null;
+        try {
+            messengerWindow = window.open('about:blank', '_blank');
+            if (messengerWindow) messengerWindow.opener = null;
+        } catch (popupError) {
+            console.warn('Could not pre-open Messenger window:', popupError);
+        }
 
         try {
             const { data: rpcData, error } = await supabaseClient.rpc('place_order', {
@@ -69,21 +87,21 @@
                 : null;
             const returnedTrackingToken = rpcData && typeof rpcData === 'object'
                 ? rpcData.tracking_token
-                : trackingToken;
+                : null;
 
-            if (!orderNumber) {
+            if (!orderNumber || typeof orderNumber !== 'string') {
                 throw new Error('Order was created but no order number was returned by the server.');
             }
 
-            if (!returnedTrackingToken) {
+            if (!returnedTrackingToken || typeof returnedTrackingToken !== 'string') {
                 throw new Error('Order was created but no tracking token was returned by the server.');
             }
 
-            document.getElementById('checkout-modal').classList.remove('active');
             window.__lastOrderData = data;
             window.__lastOrderNumber = orderNumber;
             window.__lastOrderTrackingToken = returnedTrackingToken;
 
+            const trackUrl = `track.html?order=${encodeURIComponent(orderNumber)}&token=${encodeURIComponent(returnedTrackingToken)}`;
             let text = buildOrderText(data, orderNumber);
             text = addTrackingTokenToReceipt(text, orderNumber, returnedTrackingToken);
 
@@ -93,15 +111,29 @@
                 console.warn('Could not copy order receipt:', clipboardError);
             }
 
+            const messengerUrl = `${CONFIG.messengerUrl}?text=${encodeURIComponent(text)}`;
+            if (messengerWindow && !messengerWindow.closed) {
+                messengerWindow.location.href = messengerUrl;
+            } else {
+                messengerWindow = null;
+            }
+
             cart = [];
             updateUI();
             loadProducts(false);
 
-            const messengerUrl = `${CONFIG.messengerUrl}?text=${encodeURIComponent(text)}`;
-            window.location.assign(messengerUrl);
+            const checkoutModal = document.getElementById('checkout-modal');
+            if (checkoutModal) checkoutModal.classList.remove('active');
+
+            // Main tab goes directly to the secure tracking page.
+            window.location.assign(trackUrl);
         } catch (err) {
+            if (messengerWindow && !messengerWindow.closed) {
+                try { messengerWindow.close(); } catch (closeError) {}
+            }
+
             console.error('Error placing order:', err);
-            showToast('❌ Could not place order. Please check your connection and try again.', 4000);
+            showToast(`❌ ${err?.message || 'Could not place order. Please check your connection and try again.'}`, 5000);
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
