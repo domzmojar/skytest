@@ -1,9 +1,9 @@
 // Security patch: keeps the existing storefront UI but moves trust to the database.
 (() => {
     function makeTrackingToken() {
-        if (window.crypto?.randomUUID) return crypto.randomUUID();
+        if (window.crypto?.randomUUID) return window.crypto.randomUUID();
         const bytes = new Uint8Array(24);
-        crypto.getRandomValues(bytes);
+        window.crypto.getRandomValues(bytes);
         return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
     }
 
@@ -25,7 +25,7 @@
         const trackingToken = makeTrackingToken();
 
         try {
-            const { data: result, error } = await supabaseClient.rpc('place_order', {
+            const { data: orderNumber, error } = await supabaseClient.rpc('place_order', {
                 p_customer_name: data.name,
                 p_customer_phone: null,
                 p_order_type: data.type,
@@ -43,30 +43,30 @@
             });
 
             if (error) throw error;
-
-            const orderNumber = result?.order_number;
-            if (!orderNumber || !result?.tracking_token) throw new Error('Order was created but tracking details were not returned.');
+            if (!orderNumber || typeof orderNumber !== 'string') {
+                throw new Error('Order was created but no order number was returned.');
+            }
 
             localStorage.setItem('lastOrderNumber', orderNumber);
-            localStorage.setItem('lastOrderTrackingToken', result.tracking_token);
+            localStorage.setItem('lastOrderTrackingToken', trackingToken);
 
             document.getElementById('checkout-modal').classList.remove('active');
             window.__lastOrderData = data;
             window.__lastOrderNumber = orderNumber;
-            window.__lastTrackingToken = result.tracking_token;
+            window.__lastTrackingToken = trackingToken;
 
             const text = buildOrderText(data, orderNumber);
             navigator.clipboard.writeText(text).catch(() => {});
             const messengerWin = window.open(`${CONFIG.messengerUrl}?text=${encodeURIComponent(text)}`, '_blank');
 
-            showOrderBanner(orderNumber, result.tracking_token, !messengerWin);
+            showOrderBanner(orderNumber, trackingToken, !messengerWin);
 
             cart = [];
             updateUI();
             loadProducts(false);
         } catch (err) {
             console.error('Error placing order:', err);
-            showToast('❌ Could not place order. Please check your connection and try again.', 4000);
+            showToast(`❌ ${err?.message || 'Could not place order. Please check your connection and try again.'}`, 5000);
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
