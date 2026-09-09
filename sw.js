@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sst-staff-v5';
+const CACHE_NAME = 'sst-staff-v6';
 const PRECACHE_URLS = [
     'dashboard.html',
     'index.html',
