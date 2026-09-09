@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sst-staff-v6';
+const CACHE_NAME = 'sst-staff-v7';
 const PRECACHE_URLS = [
     'dashboard.html',
     'index.html',
@@ -44,7 +44,7 @@ self.addEventListener('fetch', (event) => {
                         const scripts = [];
 
                         if (pathname.endsWith('/track.html')) {
-                            scripts.push('<script src="track-realtime-fix.js?v=5"></script>');
+                            scripts.push('<script src="track-realtime-fix.js?v=7"></script>');
                         } else if (pathname.endsWith('/index.html') || pathname.endsWith('/')) {
                             scripts.push('<script src="checkout-fix.js?v=5"></script>');
                         } else if (pathname.endsWith('/dashboard.html')) {
