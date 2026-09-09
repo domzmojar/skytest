@@ -1,5 +1,14 @@
-const CACHE_NAME = 'sst-staff-v3';
-const PRECACHE_URLS = ['dashboard.html', 'index.html', 'style.css', 'manifest.json', 'dashboard-fix.js'];
+const CACHE_NAME = 'sst-staff-v4';
+const PRECACHE_URLS = [
+    'dashboard.html',
+    'index.html',
+    'track.html',
+    'style.css',
+    'manifest.json',
+    'dashboard-fix.js',
+    'checkout-fix.js',
+    'track-realtime-fix.js'
+];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
@@ -19,17 +28,32 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('fetch', (event) => {
     if (event.request.method !== 'GET') return;
+
     event.respondWith(
         fetch(event.request)
             .then(async (response) => {
                 if (event.request.destination === 'document') {
                     const contentType = response.headers.get('content-type') || '';
                     if (contentType.includes('text/html')) {
+                        const url = new URL(event.request.url);
+                        const pathname = url.pathname.toLowerCase();
                         const html = await response.text();
-                        const injected = html.replace(
-                            '</body>',
-                            '<script src="dashboard-fix.js?v=3"></script></body>'
-                        );
+
+                        let injected = html;
+                        const scripts = [];
+
+                        if (pathname.endsWith('/track.html')) {
+                            scripts.push('<script src="track-realtime-fix.js?v=4"></script>');
+                        } else if (pathname.endsWith('/index.html') || pathname.endsWith('/')) {
+                            scripts.push('<script src="checkout-fix.js?v=4"></script>');
+                        } else if (pathname.endsWith('/dashboard.html')) {
+                            scripts.push('<script src="dashboard-fix.js?v=4"></script>');
+                        }
+
+                        if (scripts.length) {
+                            injected = html.replace('</body>', `${scripts.join('')}</body>`);
+                        }
+
                         const headers = new Headers(response.headers);
                         headers.set('content-type', 'text/html; charset=utf-8');
                         const patchedResponse = new Response(injected, {
@@ -37,6 +61,7 @@ self.addEventListener('fetch', (event) => {
                             statusText: response.statusText,
                             headers
                         });
+
                         const clone = patchedResponse.clone();
                         caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
                         return patchedResponse;
