@@ -1,276 +1,63 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Track My Order | Sky Sweet Treats</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css">
-    <link rel="icon" type="image/x-icon" href="images/logo.jpg">
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"><title>Track My Order | Sky Sweet Treats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="style.css"><link rel="icon" type="image/x-icon" href="images/logo.jpg">
     <style>
         .track-wrap { padding: 20px 0 60px; max-width: 500px; margin: 0 auto; }
         .track-form { display: flex; gap: 10px; margin-bottom: 25px; }
-        .track-form input {
-            flex: 1; padding: 14px; border: 2px solid #ddd; border-radius: var(--radius-sm);
-            font-family: inherit; font-size: 0.95rem; text-transform: uppercase;
-        }
+        .track-form input { flex: 1; padding: 14px; border: 2px solid #ddd; border-radius: var(--radius-sm); font-family: inherit; font-size: .95rem; text-transform: uppercase; }
         .track-form input:focus { border-color: var(--primary); outline: none; }
-        .track-form button {
-            background: var(--primary); color: white; border: none; padding: 0 22px;
-            border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; font-size: 0.95rem;
-        }
+        .track-form button { background: var(--primary); color: white; border: none; padding: 0 22px; border-radius: var(--radius-sm); font-weight: 700; cursor: pointer; font-size: .95rem; }
         .track-form button:hover { background: var(--primary-dark); }
-        .status-card {
-            background: white; border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow);
-            display: none;
-        }
+        .status-card { background: white; border-radius: var(--radius); padding: 25px; box-shadow: var(--shadow); display: none; }
         .status-card.show { display: block; }
         .status-order-number { text-align: center; font-size: 1.4rem; font-weight: 700; color: var(--primary); margin-bottom: 4px; }
-        .status-total { text-align: center; color: var(--text-medium); margin-bottom: 20px; font-size: 0.95rem; }
+        .status-total { text-align: center; color: var(--text-medium); margin-bottom: 20px; font-size: .95rem; }
         .status-steps { display: flex; justify-content: space-between; margin: 25px 0; position: relative; }
-        .status-steps::before {
-            content: ''; position: absolute; top: 16px; left: 8%; right: 8%; height: 3px; background: #eee; z-index: 0;
-        }
+        .status-steps::before { content: ''; position: absolute; top: 16px; left: 8%; right: 8%; height: 3px; background: #eee; z-index: 0; }
         .status-step { flex: 1; text-align: center; position: relative; z-index: 1; }
-        .status-step .dot {
-            width: 34px; height: 34px; border-radius: 50%; background: #eee; color: #999;
-            display: flex; align-items: center; justify-content: center; margin: 0 auto 8px;
-            font-size: 1rem; border: 3px solid white; box-shadow: 0 0 0 2px #eee; transition: all 0.3s ease;
-        }
+        .status-step .dot { width: 34px; height: 34px; border-radius: 50%; background: #eee; color: #999; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; font-size: 1rem; border: 3px solid white; box-shadow: 0 0 0 2px #eee; transition: all .3s ease; }
         .status-step.done .dot { background: var(--secondary); color: white; box-shadow: 0 0 0 2px var(--secondary); }
         .status-step.current .dot { background: var(--primary); color: white; box-shadow: 0 0 0 2px var(--primary); animation: pulse 2s infinite; }
-        .status-step small { font-size: 0.7rem; color: var(--text-medium); font-weight: 600; display: block; }
-        .status-cancelled-banner {
-            background: #FFEBEE; color: #C62828; border: 2px solid #FFCDD2; border-radius: var(--radius-sm);
-            padding: 14px; text-align: center; font-weight: 700; margin: 15px 0;
-        }
-        .status-meta { margin-top: 20px; padding-top: 18px; border-top: 1px dashed #ddd; font-size: 0.88rem; color: var(--text-medium); }
+        .status-step small { font-size: .7rem; color: var(--text-medium); font-weight: 600; display: block; }
+        .status-cancelled-banner { background: #FFEBEE; color: #C62828; border: 2px solid #FFCDD2; border-radius: var(--radius-sm); padding: 14px; text-align: center; font-weight: 700; margin: 15px 0; }
+        .status-meta { margin-top: 20px; padding-top: 18px; border-top: 1px dashed #ddd; font-size: .88rem; color: var(--text-medium); }
         .status-meta div { display: flex; justify-content: space-between; padding: 4px 0; }
-        .status-note {
-            background: #FFF3E0; border: 1px solid #FFB74D; border-radius: var(--radius-sm);
-            padding: 12px 15px; margin-top: 15px; font-size: 0.85rem; color: #E65100;
-        }
+        .status-note { background: #FFF3E0; border: 1px solid #FFB74D; border-radius: var(--radius-sm); padding: 12px 15px; margin-top: 15px; font-size: .85rem; color: #E65100; }
         .track-empty { text-align: center; color: var(--text-light); padding: 30px 10px; }
-        .payment-pill {
-            display: inline-block; padding: 3px 12px; border-radius: 30px; font-size: 0.72rem;
-            font-weight: 700; text-transform: uppercase; margin-top: 6px;
-        }
-        .pill-unpaid { background: #FFEBEE; color: #C62828; }
-        .pill-awaiting { background: #FFF3E0; color: #E65100; }
-        .pill-paid { background: #E8F5E9; color: #2E7D32; }
-        .live-badge {
-            display: inline-flex; align-items: center; gap: 5px; font-size: 0.7rem; font-weight: 700;
-            color: #2E7D32; text-transform: uppercase; letter-spacing: 0.3px; justify-content: center;
-            margin-top: 6px;
-        }
-        .live-dot {
-            width: 7px; height: 7px; border-radius: 50%; background: #2E7D32; animation: pulse-dot 1.5s infinite;
-        }
-        @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+        .payment-pill { display: inline-block; padding: 3px 12px; border-radius: 30px; font-size: .72rem; font-weight: 700; text-transform: uppercase; margin-top: 6px; }
+        .pill-unpaid { background: #FFEBEE; color: #C62828; }.pill-awaiting { background: #FFF3E0; color: #E65100; }.pill-paid { background: #E8F5E9; color: #2E7D32; }
+        .live-badge { display: inline-flex; align-items: center; gap: 5px; font-size: .7rem; font-weight: 700; color: #2E7D32; text-transform: uppercase; letter-spacing: .3px; justify-content: center; margin-top: 6px; }
+        .live-dot { width: 7px; height: 7px; border-radius: 50%; background: #2E7D32; animation: pulse-dot 1.5s infinite; }
+        @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
     </style>
 </head>
 <body>
-    <header class="app-header">
-        <div class="container header-flex">
-            <img src="images/logo.jpg" alt="Sky Sweet Treats Logo" class="brand-logo" onerror="this.src='https://placehold.co/100x100?text=Sweet'">
-            <div class="brand-text">
-                <h1>Track My Order</h1>
-                <p>Enter your order number to check its status 📦</p>
-            </div>
-        </div>
-    </header>
-
-    <main class="container track-wrap">
-        <div class="track-form">
-            <input type="text" id="order-input" placeholder="e.g. SST-260827-001" autocomplete="off">
-            <button onclick="checkStatus()">🔍 Check</button>
-        </div>
-
-        <div id="loading" style="display:none; text-align:center; color:var(--text-light); padding:20px;">⏳ Checking…</div>
-        <div id="track-empty" class="track-empty">
-            <p style="font-size:1.1rem; margin-bottom:8px;">🔎 No order looked up yet</p>
-            <p>Your order number was shown right after checkout.</p>
-        </div>
-
-        <div id="status-card" class="status-card">
-            <div class="status-order-number" id="status-order-number"></div>
-            <div class="status-total" id="status-total"></div>
-            <div class="live-badge"><span class="live-dot"></span> Live — updates automatically</div>
-            <div id="cancelled-banner" class="status-cancelled-banner" style="display:none;">❌ This order was cancelled.</div>
-
-            <div class="status-steps" id="status-steps"></div>
-
-            <div id="status-note-box" class="status-note" style="display:none;"></div>
-
-            <div class="status-meta">
-                <div><span>Payment</span> <span id="status-payment"></span></div>
-                <div><span>Order placed</span> <span id="status-created"></span></div>
-                <div><span>Last updated</span> <span id="status-updated"></span></div>
-            </div>
-        </div>
-
-        <a href="index.html" class="back-to-menu-link" style="display:block; margin-top:25px;">↩️ Back to menu</a>
-    </main>
-
-    <div id="toast" class="toast"></div>
-
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script>
-        const supabaseUrl = "https://rmtberbypsjcydomvhvu.supabase.co";
-        const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGJlcmJ5cHNqY3lkb212aHZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTU0NDYsImV4cCI6MjEwMzM5MTQ0Nn0.mgo9Cj8ManeLMF9DVA__7a4iAZ7OmYu81NkAEY7Pov0";
-        const supabaseClient = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
-
-        const STEPS = [
-            { key: 'pending',   label: 'Order received', icon: '📝' },
-            { key: 'accepted',  label: 'Confirmed',       icon: '✅' },
-            { key: 'preparing', label: 'Preparing',       icon: '👩‍🍳' },
-            { key: 'ready',     label: 'Ready',            icon: '📦' },
-            { key: 'completed', label: 'Completed',        icon: '🎉' }
-        ];
-
-        let orderChannel = null;
-
-        function showToast(message, duration = 2500) {
-            const toast = document.getElementById('toast');
-            toast.textContent = message;
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), duration);
-        }
-
-        function renderSteps(status) {
-            const container = document.getElementById('status-steps');
-            const cancelled = status === 'cancelled';
-            const currentIndex = STEPS.findIndex(s => s.key === status);
-
-            container.innerHTML = STEPS.map((step, i) => {
-                let cls = '';
-                if (!cancelled) {
-                    if (i < currentIndex) cls = 'done';
-                    else if (i === currentIndex) cls = 'current';
-                }
-                return `
-                    <div class="status-step ${cls}">
-                        <div class="dot">${cls === 'done' ? '✓' : step.icon}</div>
-                        <small>${step.label}</small>
-                    </div>
-                `;
-            }).join('');
-
-            document.getElementById('cancelled-banner').style.display = cancelled ? 'block' : 'none';
-        }
-
-        function paymentPill(paymentStatus) {
-            const map = {
-                unpaid: ['pill-unpaid', 'Unpaid'],
-                awaiting_confirmation: ['pill-awaiting', 'Awaiting confirmation'],
-                paid: ['pill-paid', 'Paid']
-            };
-            const [cls, label] = map[paymentStatus] || ['pill-unpaid', paymentStatus];
-            return `<span class="payment-pill ${cls}">${label}</span>`;
-        }
-
-        function formatDate(iso) {
-            if (!iso) return '—';
-            const d = new Date(iso);
-            return d.toLocaleString('en-PH', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
-        }
-
-        // ============================================
-        // REALTIME — subscribe to this order's row so status
-        // pushes to the customer instantly, no refresh needed
-        // ============================================
-        function subscribeToOrder(orderNumber) {
-            if (orderChannel) {
-                supabaseClient.removeChannel(orderChannel);
-                orderChannel = null;
-            }
-            orderChannel = supabaseClient
-                .channel(`track:${orderNumber}`)
-                .on('postgres_changes',
-                    { event: '*', schema: 'public', table: 'orders', filter: `order_number=eq.${orderNumber}` },
-                    () => checkStatus(true)
-                )
-                .subscribe();
-        }
-
-        async function checkStatus(silent = false) {
-            const raw = silent
-                ? document.getElementById('status-order-number').textContent
-                : document.getElementById('order-input').value.trim().toUpperCase();
-            if (!raw) return showToast('⚠️ Please enter your order number');
-
-            if (!silent) {
-                document.getElementById('status-card').classList.remove('show');
-                document.getElementById('track-empty').style.display = 'none';
-                document.getElementById('loading').style.display = 'block';
-            }
-
-            try {
-                const { data, error } = await supabaseClient.rpc('get_order_status', { p_order_number: raw });
-                if (!silent) document.getElementById('loading').style.display = 'none';
-
-                if (error) throw error;
-                if (!data || data.length === 0) {
-                    if (!silent) {
-                        document.getElementById('track-empty').style.display = 'block';
-                        document.getElementById('track-empty').innerHTML = `
-                            <p style="font-size:1.1rem; margin-bottom:8px;">❌ Order not found</p>
-                            <p>Double-check your order number and try again.</p>
-                        `;
-                        showToast('❌ No order found with that number');
-                    }
-                    return;
-                }
-
-                const order = data[0];
-                document.getElementById('status-order-number').textContent = order.order_number;
-                document.getElementById('status-total').textContent = `Total: ₱${parseFloat(order.total).toFixed(2)}`;
-                document.getElementById('status-payment').innerHTML = paymentPill(order.payment_status);
-                document.getElementById('status-created').textContent = formatDate(order.created_at);
-                document.getElementById('status-updated').textContent = formatDate(order.updated_at);
-
-                renderSteps(order.status);
-
-                const noteBox = document.getElementById('status-note-box');
-                if (order.staff_note) {
-                    noteBox.style.display = 'block';
-                    noteBox.textContent = `💬 Note from Sky Sweet Treats: ${order.staff_note}`;
-                } else {
-                    noteBox.style.display = 'none';
-                }
-
-                document.getElementById('status-card').classList.add('show');
-
-                if (!silent) {
-                    subscribeToOrder(order.order_number);
-                } else {
-                    showToast('🔄 Order status updated!');
-                }
-
-            } catch (err) {
-                console.error(err);
-                if (!silent) {
-                    document.getElementById('loading').style.display = 'none';
-                    document.getElementById('track-empty').style.display = 'block';
-                    showToast('❌ Could not check order status. Try again.');
-                }
-            }
-        }
-
-        document.getElementById('order-input').addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') checkStatus();
-        });
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const params = new URLSearchParams(window.location.search);
-            const orderParam = params.get('order');
-            if (orderParam) {
-                document.getElementById('order-input').value = orderParam;
-                checkStatus();
-            }
-        });
-    </script>
-</body>
-</html>
+<header class="app-header"><div class="container header-flex"><img src="images/logo.jpg" alt="Sky Sweet Treats Logo" class="brand-logo" onerror="this.src='https://placehold.co/100x100?text=Sweet'"><div class="brand-text"><h1>Track My Order</h1><p>Enter your order number to check its status 📦</p></div></div></header>
+<main class="container track-wrap">
+    <div class="track-form"><input type="text" id="order-input" placeholder="e.g. SST-260827-001" autocomplete="off"><button onclick="checkStatus()">🔍 Check</button></div>
+    <div id="loading" style="display:none;text-align:center;color:var(--text-light);padding:20px;">⏳ Checking…</div>
+    <div id="track-empty" class="track-empty"><p style="font-size:1.1rem;margin-bottom:8px;">🔎 No order looked up yet</p><p>Your order number was shown right after checkout.</p></div>
+    <div id="status-card" class="status-card"><div class="status-order-number" id="status-order-number"></div><div class="status-total" id="status-total"></div><div class="live-badge"><span class="live-dot"></span> Live — updates automatically</div><div id="cancelled-banner" class="status-cancelled-banner" style="display:none;">❌ This order was cancelled.</div><div class="status-steps" id="status-steps"></div><div id="status-note-box" class="status-note" style="display:none;"></div><div class="status-meta"><div><span>Payment</span> <span id="status-payment"></span></div><div><span>Order placed</span> <span id="status-created"></span></div><div><span>Last updated</span> <span id="status-updated"></span></div></div></div>
+    <a href="index.html" class="back-to-menu-link" style="display:block;margin-top:25px;">↩️ Back to menu</a>
+</main>
+<div id="toast" class="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+const supabaseUrl="https://rmtberbypsjcydomvhvu.supabase.co";
+const supabaseAnonKey="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJtdGJlcmJ5cHNqY3lkb212aHZ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc4MTU0NDYsImV4cCI6MjEwMzM5MTQ0Nn0.mgo9Cj8ManeLMF9DVA__7a4iAZ7OmYu81NkAEY7Pov0";
+const supabaseClient=window.supabase.createClient(supabaseUrl,supabaseAnonKey);
+const STEPS=[{key:'pending',label:'Order received',icon:'📝'},{key:'accepted',label:'Confirmed',icon:'✅'},{key:'preparing',label:'Preparing',icon:'👩‍🍳'},{key:'ready',label:'Ready',icon:'📦'},{key:'completed',label:'Completed',icon:'🎉'}];
+let orderChannel=null;
+function showToast(message,duration=2500){const toast=document.getElementById('toast');toast.textContent=message;toast.classList.add('show');setTimeout(()=>toast.classList.remove('show'),duration);}
+function renderSteps(status){const container=document.getElementById('status-steps'),cancelled=status==='cancelled',currentIndex=STEPS.findIndex(s=>s.key===status);container.innerHTML=STEPS.map((step,i)=>{let cls='';if(!cancelled){if(i<currentIndex)cls='done';else if(i===currentIndex)cls='current';}return `<div class="status-step ${cls}"><div class="dot">${cls==='done'?'✓':step.icon}</div><small>${step.label}</small></div>`;}).join('');document.getElementById('cancelled-banner').style.display=cancelled?'block':'none';}
+function paymentPill(paymentStatus){const map={unpaid:['pill-unpaid','Unpaid'],awaiting_confirmation:['pill-awaiting','Awaiting confirmation'],paid:['pill-paid','Paid']};const [cls,label]=map[paymentStatus]||['pill-unpaid',paymentStatus];return `<span class="payment-pill ${cls}">${label}</span>`;}
+function formatDate(iso){if(!iso)return '—';return new Date(iso).toLocaleString('en-PH',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});}
+function subscribeToOrder(orderNumber){if(orderChannel){supabaseClient.removeChannel(orderChannel);orderChannel=null;}orderChannel=supabaseClient.channel(`track:${orderNumber}`).on('postgres_changes',{event:'*',schema:'public',table:'orders',filter:`order_number=eq.${orderNumber}`},()=>checkStatus(true)).subscribe();}
+async function checkStatus(silent=false){const params=new URLSearchParams(window.location.search),raw=silent?document.getElementById('status-order-number').textContent:document.getElementById('order-input').value.trim().toUpperCase(),token=params.get('token')||localStorage.getItem('lastOrderTrackingToken')||'';if(!raw)return showToast('⚠️ Please enter your order number');if(!token){if(!silent)showToast('🔐 Please use the tracking link from your order confirmation.');return;}if(!silent){document.getElementById('status-card').classList.remove('show');document.getElementById('track-empty').style.display='none';document.getElementById('loading').style.display='block';}try{const {data,error}=await supabaseClient.rpc('get_order_status',{p_order_number:raw,p_tracking_token:token});if(!silent)document.getElementById('loading').style.display='none';if(error)throw error;if(!data||data.length===0){if(!silent){document.getElementById('track-empty').style.display='block';document.getElementById('track-empty').innerHTML='<p style="font-size:1.1rem;margin-bottom:8px;">❌ Order not found</p><p>Use the tracking link from your order confirmation.</p>';showToast('❌ Order not found');}return;}const order=data[0];document.getElementById('status-order-number').textContent=order.order_number;document.getElementById('status-total').textContent=`Total: ₱${parseFloat(order.total).toFixed(2)}`;document.getElementById('status-payment').innerHTML=paymentPill(order.payment_status);document.getElementById('status-created').textContent=formatDate(order.created_at);document.getElementById('status-updated').textContent=formatDate(order.updated_at);renderSteps(order.status);document.getElementById('status-note-box').style.display='none';document.getElementById('status-card').classList.add('show');if(!silent)subscribeToOrder(order.order_number);else showToast('🔄 Order status updated!');}catch(err){console.error(err);if(!silent){document.getElementById('loading').style.display='none';document.getElementById('track-empty').style.display='block';showToast('❌ Could not check order status. Try again.');}}}
+document.getElementById('order-input').addEventListener('keydown',e=>{if(e.key==='Enter')checkStatus();});
+window.addEventListener('DOMContentLoaded',()=>{const params=new URLSearchParams(window.location.search),orderParam=params.get('order');if(orderParam){document.getElementById('order-input').value=orderParam;checkStatus();}});
+</script>
+<script src="track-security-patch.js"></script>
+</body></html>
