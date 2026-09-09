@@ -1,4 +1,4 @@
-const CACHE_NAME = 'sst-staff-v4';
+const CACHE_NAME = 'sst-staff-v5';
 const PRECACHE_URLS = [
     'dashboard.html',
     'index.html',
@@ -7,7 +7,8 @@ const PRECACHE_URLS = [
     'manifest.json',
     'dashboard-fix.js',
     'checkout-fix.js',
-    'track-realtime-fix.js'
+    'track-realtime-fix.js',
+    'security-patch.js?v=5'
 ];
 
 self.addEventListener('install', (event) => {
@@ -43,11 +44,11 @@ self.addEventListener('fetch', (event) => {
                         const scripts = [];
 
                         if (pathname.endsWith('/track.html')) {
-                            scripts.push('<script src="track-realtime-fix.js?v=4"></script>');
+                            scripts.push('<script src="track-realtime-fix.js?v=5"></script>');
                         } else if (pathname.endsWith('/index.html') || pathname.endsWith('/')) {
-                            scripts.push('<script src="checkout-fix.js?v=4"></script>');
+                            scripts.push('<script src="checkout-fix.js?v=5"></script>');
                         } else if (pathname.endsWith('/dashboard.html')) {
-                            scripts.push('<script src="dashboard-fix.js?v=4"></script>');
+                            scripts.push('<script src="dashboard-fix.js?v=5"></script>');
                         }
 
                         if (scripts.length) {
