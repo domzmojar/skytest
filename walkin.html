@@ -26,6 +26,10 @@
         .kiosk-total-row { display: flex; justify-content: space-between; max-width: 380px; margin: 0 auto 20px; font-weight: 700; font-size: 1.1rem; padding: 0 4px; }
         .kiosk-gcash-note { max-width: 380px; margin: 0 auto 20px; background: #FFF3E0; border: 1px solid #FFB74D; border-radius: var(--radius-sm); padding: 12px 16px; font-size: .85rem; color: #E65100; text-align: left; }
         .kiosk-new-order-btn { background: var(--primary); color: white; border: none; padding: 14px 30px; border-radius: 30px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+        .kiosk-track-box { max-width: 380px; margin: 0 auto 20px; background: #FFF0E9; border: 1px dashed var(--primary); border-radius: var(--radius-sm); padding: 14px 16px; }
+        .kiosk-track-box p { font-size: .85rem; color: var(--text-dark); margin-bottom: 10px; font-weight: 600; }
+        .kiosk-track-box img { width: 120px; height: 120px; display: block; margin: 0 auto 8px; border-radius: 8px; }
+        .kiosk-track-box a { font-size: .78rem; color: var(--primary); font-weight: 700; text-decoration: none; word-break: break-all; }
     </style>
 </head>
 <body>
@@ -61,6 +65,11 @@
         <div class="kiosk-items-box" id="kiosk-items"></div>
         <div class="kiosk-total-row"><span>Total</span><span id="kiosk-total">₱0.00</span></div>
         <div id="kiosk-gcash-note" class="kiosk-gcash-note" style="display:none;">📱 <strong>Paid via GCash:</strong> show your payment screenshot to the cashier along with this screen.</div>
+        <div class="kiosk-track-box">
+            <p>📲 Want updates on your phone?</p>
+            <img id="kiosk-track-qr" src="" alt="Scan to track your order">
+            <a id="kiosk-track-link" href="#" target="_blank" rel="noopener">Scan to open your tracking page, then tap "Get notified of updates"</a>
+        </div>
         <button class="kiosk-new-order-btn" onclick="location.reload()">🔄 Order Again (next customer)</button>
     </div>
 
@@ -132,7 +141,7 @@
                     localStorage.setItem('lastOrderNumber', orderNumber);
                     document.getElementById('checkout-modal').classList.remove('active');
 
-                    showKioskConfirmation(orderNumber, data, cartSnapshot);
+                    showKioskConfirmation(orderNumber, data, cartSnapshot, trackingToken);
 
                     cart = [];
                     updateUI();
@@ -148,7 +157,7 @@
                 }
             };
 
-            window.showKioskConfirmation = function (orderNumber, data, cartSnapshot) {
+            window.showKioskConfirmation = function (orderNumber, data, cartSnapshot, trackingToken) {
                 document.getElementById('kiosk-order-number').textContent = orderNumber;
                 document.getElementById('kiosk-qr-img').src =
                     'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(orderNumber);
@@ -159,6 +168,11 @@
 
                 document.getElementById('kiosk-total').textContent = `₱${data.total.toFixed(2)}`;
                 document.getElementById('kiosk-gcash-note').style.display = data.pay === 'GCASH' ? 'block' : 'none';
+
+                const trackUrl = `${window.location.origin}${window.location.pathname.replace(/walkin\.html$/, '')}track.html?order=${encodeURIComponent(orderNumber)}&token=${encodeURIComponent(trackingToken)}`;
+                document.getElementById('kiosk-track-qr').src =
+                    'https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=' + encodeURIComponent(trackUrl);
+                document.getElementById('kiosk-track-link').href = trackUrl;
 
                 document.getElementById('cart-modal').classList.remove('active');
                 document.getElementById('kiosk-confirm').classList.add('show');
