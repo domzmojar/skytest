@@ -11,7 +11,7 @@
 
     function getTrackingToken() {
         const params = new URLSearchParams(window.location.search);
-        return (params.get('token') || '').trim();
+        return (params.get('token') || localStorage.getItem('lastOrderTrackingToken') || '').trim();
     }
 
     function getOrderNumber() {
