@@ -466,6 +466,8 @@ window.toggleDeliveryFields = function() {
     const codOption = paymentSelect.querySelector('option[value="COD"]');
     const copOption = paymentSelect.querySelector('option[value="COP"]');
 
+    if (!codOption || !copOption) return; // kiosk mode: different payment options, skip COD/COP swap
+
     if (orderType === 'Delivery') {
         codOption.style.display = 'block';
         copOption.style.display = 'none';

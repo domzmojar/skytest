@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Order Here | Sky Sweet Treats</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" type="image/x-icon" href="images/logo.jpg">
+    <style>
+        #order-type-group { display: none !important; }
+        #kiosk-confirm {
+            display: none; position: fixed; inset: 0; background: #fff; z-index: 9999;
+            overflow-y: auto; padding: 30px 20px 50px; text-align: center;
+        }
+        #kiosk-confirm.show { display: block; }
+        .kiosk-badge { font-size: .8rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .5px; }
+        .kiosk-order-number { font-size: 2rem; font-weight: 700; color: var(--primary); margin: 8px 0 20px; }
+        .kiosk-qr-box { background: white; border: 3px solid var(--primary); border-radius: var(--radius); padding: 16px; display: inline-block; margin-bottom: 18px; }
+        .kiosk-qr-box img { display: block; width: 220px; height: 220px; }
+        .kiosk-instruction { font-size: 1rem; font-weight: 600; color: var(--text-dark); margin-bottom: 20px; }
+        .kiosk-items-box { text-align: left; max-width: 380px; margin: 0 auto 16px; background: #fafafa; border-radius: var(--radius-sm); padding: 14px 16px; }
+        .kiosk-items-box div { padding: 3px 0; font-size: .9rem; }
+        .kiosk-total-row { display: flex; justify-content: space-between; max-width: 380px; margin: 0 auto 20px; font-weight: 700; font-size: 1.1rem; padding: 0 4px; }
+        .kiosk-gcash-note { max-width: 380px; margin: 0 auto 20px; background: #FFF3E0; border: 1px solid #FFB74D; border-radius: var(--radius-sm); padding: 12px 16px; font-size: .85rem; color: #E65100; text-align: left; }
+        .kiosk-new-order-btn { background: var(--primary); color: white; border: none; padding: 14px 30px; border-radius: 30px; font-weight: 700; font-size: 1rem; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <div class="container header-flex">
+            <img src="images/logo.jpg" alt="Sky Sweet Treats Logo" class="brand-logo" onerror="this.src='https://placehold.co/100x100?text=Sweet'">
+            <div class="brand-text"><h1>Sky Sweet Treats</h1><p>🏪 Order here — pick your treats and pay at the cashier!</p></div>
+        </div>
+    </header>
+    <div id="hero-carousel" class="hero-carousel"></div>
+    <div id="category-tabs" class="category-tabs"></div>
+    <main class="container"><div id="menu-grid" class="menu-grid"></div></main>
+    <div class="floating-cart" id="open-cart-btn"><div class="cart-icon">🛒 <span id="cart-count" class="badge">0</span></div><div class="cart-total">Total: <span id="float-total">₱0.00</span></div></div>
+
+    <div id="cart-modal" class="modal"><div class="modal-content"><div class="modal-header"><h2>🛒 Your Order Cart</h2><button onclick="closeModal('cart-modal')" class="close-btn">&times;</button></div><div id="cart-items" class="cart-items-container"></div><div class="modal-footer"><div class="modal-total-display">Total Amount: <span id="modal-total">₱0.00</span></div><button onclick="openCheckout()" class="btn-primary">➡️ Next: Payment</button><span class="back-to-menu-link" onclick="closeModal('cart-modal')">➕ Add more items</span></div></div></div>
+
+    <div id="checkout-modal" class="modal"><div class="modal-content"><div class="modal-header"><h2>💳 Confirm Your Order</h2><button onclick="closeModal('checkout-modal')" class="close-btn">&times;</button></div><div class="checkout-body">
+        <div class="option-group" id="order-type-group"><label>Order Type:</label><select id="order-type"><option value="Walk-in" selected>Walk-in</option></select></div>
+        <div id="shipping-group" class="option-group" style="display:none;"><label>Shipping Address <span id="shipping-fee-display" class="shipping-fee"></span></label><select id="shipping-address"></select></div>
+        <div id="landmark-group" class="form-group" style="display:none;"><label>Landmark</label><textarea id="customer-address" rows="2"></textarea></div>
+        <div class="form-group"><label>👤 Your Name <span style="color:var(--primary);">*</span></label><input type="text" id="customer-name" placeholder="Juan Dela Cruz" required></div>
+        <div class="form-group" id="exact-amount-group"><label>💰 Sakto imo ibayad? <span style="color:var(--primary);">*</span></label><div style="display:flex;gap:20px;margin-top:5px;"><label style="display:flex;align-items:center;gap:5px;"><input type="radio" name="exact-amount" value="yes" onchange="toggleAmountInput()" required> Yes, exact amount</label><label style="display:flex;align-items:center;gap:5px;"><input type="radio" name="exact-amount" value="no" onchange="toggleAmountInput()" required> No, may sukli</label></div><div id="amount-input-container" style="display:none;margin-top:10px;"><label for="customer-amount">💵 Amount you'll hand over:</label><input type="number" id="customer-amount" step=".01" min="0" placeholder="e.g., 500.00" oninput="updateChangeDue()" style="width:100%;"></div><div id="change-due-container" style="display:none;margin-top:10px;padding:10px;background:#e8f5e9;border-radius:var(--radius-sm);"><strong style="color:#2e7d32;">🔄 Your change:</strong> <span id="change-due-amount">₱0.00</span></div></div>
+        <div class="option-group"><label>💳 Mode of Payment:</label><select id="payment-method" onchange="toggleGcashInfo()"><option value="CASH">💵 Cash (pay at cashier)</option><option value="GCASH">📱 GCash</option></select></div>
+        <div id="gcash-info" class="payment-info-box" style="display:none;"><h4>📱 GCash Payment Instructions</h4><p><strong>💳 GCash Number:</strong> 09264569430<br><strong>👤 Account Name:</strong> K** M.</p><img src="images/qr-pay.jpg" id="qr-image-el" class="qr-image" alt="GCash QR Code" onerror="this.style.display='none'"><div class="receipt-reminder">⚠️ <strong>Important:</strong><br>1. Send payment to the number above<br>2. Keep your payment screenshot<br>3. <strong>Show the screenshot to the cashier</strong> when you show your order QR</div></div>
+        <div class="order-summary-box"><strong>📋 Order Summary:</strong><div id="final-summary-text"></div><div id="shipping-summary"></div></div>
+    </div><div class="modal-footer"><button id="messenger-btn" onclick="submitOrder()" class="btn-primary">✅ Place Order</button><span class="back-to-menu-link" onclick="closeModal('checkout-modal')">↩️ Go back to menu</span></div></div></div>
+
+    <div id="kiosk-confirm">
+        <div class="kiosk-badge">✅ Order placed!</div>
+        <div class="kiosk-order-number" id="kiosk-order-number">—</div>
+        <div class="kiosk-qr-box"><img id="kiosk-qr-img" src="" alt="Order QR code"></div>
+        <div class="kiosk-instruction">📢 Show this screen to the cashier</div>
+        <div class="kiosk-items-box" id="kiosk-items"></div>
+        <div class="kiosk-total-row"><span>Total</span><span id="kiosk-total">₱0.00</span></div>
+        <div id="kiosk-gcash-note" class="kiosk-gcash-note" style="display:none;">📱 <strong>Paid via GCash:</strong> show your payment screenshot to the cashier along with this screen.</div>
+        <button class="kiosk-new-order-btn" onclick="location.reload()">🔄 Order Again (next customer)</button>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="app.js"></script>
+    <script src="security-patch.js?v=5"></script>
+    <script>
+        // ============================================
+        // KIOSK OVERRIDE — loaded last, replaces submitOrder again.
+        // Same RPC contract as security-patch.js (tracking token required,
+        // jsonb {order_number, tracking_token} return) but shows a QR/order
+        // number screen for the cashier instead of opening Messenger.
+        // ============================================
+        (() => {
+            function makeTrackingToken() {
+                if (window.crypto?.randomUUID) return window.crypto.randomUUID();
+                const bytes = new Uint8Array(24);
+                window.crypto.getRandomValues(bytes);
+                return Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('');
+            }
+
+            window.submitOrder = async function () {
+                const data = collectCheckoutData();
+                if (!data) return;
+
+                const submitBtn = document.getElementById('messenger-btn');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '⏳ Placing your order...';
+                }
+
+                const cartSnapshot = [...cart];
+                const items = cartSnapshot.map(i => ({
+                    product_id: i.parentId || i.id,
+                    product_name: i.name,
+                    flavor: i.flavor || null,
+                    price: i.price,
+                    qty: i.qty
+                }));
+
+                const trackingToken = makeTrackingToken();
+
+                try {
+                    const { data: rpcData, error } = await supabaseClient.rpc('place_order', {
+                        p_customer_name: data.name,
+                        p_customer_phone: null,
+                        p_order_type: 'Walk-in',
+                        p_landmark: null,
+                        p_shipping_zone: null,
+                        p_shipping_fee: 0,
+                        p_payment_method: data.pay,
+                        p_exact_amount: data.exactAmount,
+                        p_amount_given: data.customerAmount,
+                        p_change_due: data.changeDue,
+                        p_subtotal: data.subtotal,
+                        p_total: data.total,
+                        p_items: items,
+                        p_tracking_token: trackingToken
+                    });
+
+                    if (error) throw error;
+
+                    const orderNumber = rpcData && typeof rpcData === 'object' ? rpcData.order_number : null;
+                    if (!orderNumber || typeof orderNumber !== 'string') {
+                        throw new Error('Order was created but no order number was returned by the server.');
+                    }
+
+                    localStorage.setItem('lastOrderNumber', orderNumber);
+                    document.getElementById('checkout-modal').classList.remove('active');
+
+                    showKioskConfirmation(orderNumber, data, cartSnapshot);
+
+                    cart = [];
+                    updateUI();
+                    loadProducts(false);
+                } catch (err) {
+                    console.error('Error placing order:', err);
+                    showToast(`❌ ${err?.message || 'Could not place order. Please check your connection and try again.'}`, 5000);
+                } finally {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '✅ Place Order';
+                    }
+                }
+            };
+
+            window.showKioskConfirmation = function (orderNumber, data, cartSnapshot) {
+                document.getElementById('kiosk-order-number').textContent = orderNumber;
+                document.getElementById('kiosk-qr-img').src =
+                    'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(orderNumber);
+
+                document.getElementById('kiosk-items').innerHTML = cartSnapshot.map(i =>
+                    `<div>${i.qty}x ${i.name}${i.flavor ? ' (' + i.flavor + ')' : ''} — ₱${(i.price * i.qty).toFixed(2)}</div>`
+                ).join('');
+
+                document.getElementById('kiosk-total').textContent = `₱${data.total.toFixed(2)}`;
+                document.getElementById('kiosk-gcash-note').style.display = data.pay === 'GCASH' ? 'block' : 'none';
+
+                document.getElementById('cart-modal').classList.remove('active');
+                document.getElementById('kiosk-confirm').classList.add('show');
+            };
+        })();
+    </script>
+</body>
+</html>
